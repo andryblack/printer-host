@@ -1,0 +1,15 @@
+[Unit]
+Description=3d printer
+
+[Service]
+User=print3d
+Group=print3d
+ExecStart=/usr/local/bin/printer-host /usr/local/share/printer-host/app/main.lua \
+	--config=/usr/local/share/printer-host/config.lua
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

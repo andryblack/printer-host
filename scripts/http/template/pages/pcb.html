@@ -1,0 +1,224 @@
+{% layout="layout.html" %}
+{-jslibs-}
+<script src="js/jquery.panzoom.min.js"></script>
+{-jslibs-}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+
+  <h1 class="h2">PCB</h1>
+  <div class="btn-toolbar mb-2 mb-md-0">
+    
+  </div>
+
+
+</div>
+
+<div id = "alert_placeholder"></div>
+
+<div class="row">
+	<div class="col-sm-8">
+ 		<div class="pcb-view-cont" style="width: 100%; height: 400px; border:1px solid black;">
+			<div class="panzoom" id="svg-panzoom" style="width: 100%; height: 100px" >
+				{* printer.pcb:get_svg() *}
+				<!-- 
+				<svg id="svg-view"  type="image/svg+xml"
+					src="api/pcb.svg">
+				</img> -->
+			</div>
+		</div>
+	</div>
+	<div class="form-group col-sm-4" >
+		<label >Outline</label>
+		<div class="form-row mb-3" >
+			<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" >Count</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-outline-count" value="{*printer.pcb:get_config().outline_count*}" disabled>
+	 		</div>
+	 		<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" id="">Z</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-outline-z" value="{*printer.pcb:get_config().outline_z*}" disabled>
+	 		</div>
+	 	</div>
+	 	<div class="form-row mb-3">
+	 		<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" id="">Offset</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-outline-offset" value="{*printer.pcb:get_config().outline_offset*}" disabled>
+	 		</div>
+	 		<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" id="">Step</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-outline-step" value="{*printer.pcb:get_config().outline_step*}" disabled>
+	 		</div>
+	 	</div>
+	 	
+	 	<div class="form-check">
+		 	<input type="checkbox" class="form-check-input enabled-on-printer-state-idle" id="config-fill-enable" value="" disabled {*(printer.pcb:get_config().fill_enable and 'checked' or '')*}>
+		 	<label class="form-check-label" for="config-fill-enable">
+	    		Fill
+	  		</label>
+  		</div>
+	 	<div class="form-row mb-3">
+			
+	 		<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" id="">Z</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-fill-z" value="{*printer.pcb:get_config().fill_z*}" disabled>
+	 		</div>
+
+	 	</div>
+	 	<div class="form-row mb-3">
+	 		<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" id="">Offset</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-fill-offset" value="{*printer.pcb:get_config().fill_offset*}" disabled>
+	 		</div>
+	 		<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" id="">Step</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-fill-step" value="{*printer.pcb:get_config().fill_step*}" disabled>
+	 		</div>
+	 	</div>
+	 	<label >Position</label>
+	 	<div class="form-row mb-3">
+	 		<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" id="">X</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-position-x" value="{*printer.pcb:get_config().position_x*}" disabled>
+	 		</div>
+	 		<div class="input-group col-sm-6">
+	 			<div class="input-group-prepend" style="width: 50%" >
+	    			<span class="input-group-text" style="width: 100%" id="">Y</span>
+	  			</div>
+	  			<input type="text" class="form-control enabled-on-printer-state-idle" id="config-position-y" value="{*printer.pcb:get_config().position_y*}" disabled>
+	 		</div>
+	 	</div>
+	 	<button id="pcb-update" class="btn btn-secondary enabled-on-printer-state-idle" disabled>Update</button>
+	 	<button id="pcb-print" class="btn btn-primary btn-outline-secondary mr-2 visible-on-printer-state-idle">
+      		<span data-feather="play-circle"></span>
+      		Print</button>
+	</div>
+</div>
+	
+
+{-sctipts-}
+
+<script type="text/javascript">
+
+page_ctx.on_change_state = function(state) {
+	//location.reload();
+	reload_svg();
+}
+
+function setup_pcb_panzoom() {
+	// var $section = $('#pcb-svg');
+	// $section.find('#pcb-tr').panzoom({
+	// 	disableZoom: true
+	// });
+}
+
+function setup_panzoom( tr ) {
+	var panzoom = $("#svg-panzoom").panzoom();
+	panzoom.panzoom('option',{
+		increment: 0.05,
+	});
+	panzoom.parent().on('mousewheel.focal', function( e ) {
+            e.preventDefault();
+            var delta = e.delta || e.originalEvent.wheelDelta;
+            var zoomOut = delta ? delta < 0  : e.originalEvent.deltaY > 0;
+            //console.log(zoomOut);
+            panzoom.panzoom('zoom', zoomOut, {
+              animate: false,
+              focal: e
+            });
+          });
+	setup_pcb_panzoom();
+}
+
+setup_panzoom();
+
+function reload_svg() {
+	fetch('/api/pcb.svg')
+		.then(checkStatus)
+		.then(r => r.text())
+		.then(text => {
+			var tr = $("#svg-panzoom").panzoom('getTransform');
+			$("#svg-panzoom").empty();
+			$("#svg-panzoom").append( text );
+			setup_panzoom();
+			//$("#svg-panzoom").panzoom('setTransform',tr);
+		})
+		.catch(function(error) {
+        	bootstrap_alert.error(
+            	'<p>Failed load svg</p>'+
+           	 '<hr><p class="mb-0">' + error + '</p>'
+          	);
+    	});
+}
+
+//reload_svg();
+
+$('#pcb-update').click(function(){
+  var config = {
+  	outline_count: 	$('#config-outline-count').val() >>> 0,
+  	outline_z: 		1.0*$('#config-outline-z').val(),
+  	outline_offset: 1.0*$('#config-outline-offset').val(),
+  	outline_step: 	1.0*$('#config-outline-step').val(),
+  	fill_z: 		1.0*$('#config-fill-z').val(),
+  	fill_offset: 	1.0*$('#config-fill-offset').val(),
+  	fill_step: 		1.0*$('#config-fill-step').val(),
+  	position_x: 	1.0*$('#config-position-x').val(),
+  	position_y: 	1.0*$('#config-position-y').val(),
+  	fill_enable: 	!!$('#config-fill-enable').prop('checked')
+  };
+  fetch('/api/pcb/update',{
+  		headers: {
+	  		'Accept': 'application/json',
+	      	'Content-Type': 'application/json',
+	    },
+  		method: "POST",
+  		body: JSON.stringify(config)
+  	})
+    .then(checkStatus)
+    .then(parseJSON)
+    .then(checkResultStatus)
+    .then(function(data) {
+       reload_svg();
+    }).catch(function(error) {
+        bootstrap_alert.error(
+            '<p>Failed update</p>'+
+            '<hr><p class="mb-0">' + error + '</p>'
+          );
+    })
+});
+
+$('#pcb-print').click(function(){
+	 fetch('/api/pcb/print',{
+  		method: "POST"
+  	})
+    .then(checkStatus)
+    .then(parseJSON)
+    .then(checkResultStatus)
+    .then(function(data) {
+       window.location.href = data.redirect;
+    }).catch(function(error) {
+        bootstrap_alert.error(
+            '<p>Failed print</p>'+
+            '<hr><p class="mb-0">' + error + '</p>'
+          );
+    })
+});
+
+</script>
+
+{-sctipts-}

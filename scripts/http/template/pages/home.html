@@ -1,0 +1,177 @@
+{% layout="layout.html" %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+
+  <div><!-- place --></div>
+  <div class="btn-toolbar mb-2 mb-md-0">
+    <button id="printer-disconnect" class="btn btn-sm btn-outline-danger mr-2 visible-on-printer-state-idle">
+      <span data-feather="power"></span>
+      Disconnect</button>
+    <button id="printer-connect" class="btn btn-sm btn-outline-secondary mr-2 visible-on-printer-state-disconnected">
+      <span data-feather="power"></span>
+      Connect</button>
+    <button id="printer-pause" class="btn btn-sm btn-outline-secondary mr-2 visible-on-printer-state-printing">
+      <span data-feather="pause"></span>
+      Pause</button>
+    <button id="printer-stop" class="btn btn-sm btn-outline-danger mr-2 visible-on-printer-state-paused">
+      <span data-feather="stop-circle"></span>
+      Stop</button>
+    <button id="printer-resume" class="btn btn-sm btn-outline-secondary mr-2 visible-on-printer-state-paused">
+      <span data-feather="pause"></span>
+      Resume</button>
+  </div>
+
+  
+
+</div>
+
+<div id = "alert_placeholder"></div>
+
+<div class="printer-control visible-on-printer-state-idle col-sm-4" >
+  
+  <object type="image/svg+xml" data="/img/printer-panel.svg" id="svg-printer-panel" width="300px" height="256px" viewbox="0 0 300 256">
+  </object>
+  <div col-sm-4>
+    <span id="coord">
+    </span>
+  </div>
+</div>
+
+
+
+{-sctipts-}
+
+<script type="text/javascript">
+
+function on_state_changed(state) {
+
+}
+
+$('#printer-disconnect').click(function(){
+  fetch('/api/disconnect',{method:'POST'})
+    .then(checkStatus)
+    .then(parseJSON)
+    .then(function(data) {
+       update_state(data);
+    }).catch(function(error) {
+        bootstrap_alert.error(
+            '<p>Failed disconnect</p>'+
+            '<hr><p class="mb-0">' + error + '</p>'
+          );
+    })
+});
+
+$('#printer-connect').click(function(){
+  fetch('/api/connect',{method:'POST'})
+    .then(checkStatus)
+    .then(parseJSON)
+    .then(function(data) {
+       update_state(data);
+    }).catch(function(error) {
+        bootstrap_alert.error(
+            '<p>Failed connect</p>'+
+            '<hr><p class="mb-0">' + error + '</p>'
+          );
+    })
+});
+
+$('#printer-pause').click(function(){
+  fetch('/api/pause',{method:'POST'})
+    .then(checkStatus)
+    .then(parseJSON)
+    .then(function(data) {
+       update_state(data);
+    }).catch(function(error) {
+        bootstrap_alert.error(
+            '<p>Failed pause</p>'+
+            '<hr><p class="mb-0">' + error + '</p>'
+          );
+    })
+});
+
+$('#printer-resume').click(function(){
+  fetch('/api/resume',{method:'POST'})
+    .then(checkStatus)
+    .then(parseJSON)
+    .then(function(data) {
+       update_state(data);
+    }).catch(function(error) {
+        bootstrap_alert.error(
+            '<p>Failed resume</p>'+
+            '<hr><p class="mb-0">' + error + '</p>'
+          );
+    })
+});
+
+$('#printer-stop').click(function(){
+  fetch('/api/stop',{method:'POST'})
+    .then(checkStatus)
+    .then(parseJSON)
+    .then(function(data) {
+       update_state(data);
+    }).catch(function(error) {
+        bootstrap_alert.error(
+            '<p>Failed stop</p>'+
+            '<hr><p class="mb-0">' + error + '</p>'
+          );
+    })
+});
+
+
+var svg_obj = $('#svg-printer-panel');
+svg_obj.get(0).addEventListener('load',function(){
+    console.log('onload');
+    let svg = $(svg_obj.get(0).contentDocument);
+    var btn_home_x = svg.find('#btn-home-x');
+    btn_home_x.click(function(){
+        do_printer_action('home-x');
+    });
+    svg.find('#btn-home-y').click(function(){
+        do_printer_action('home-y');
+    });
+    svg.find('#btn-home-z').click(function(){
+        do_printer_action('home-z');
+    });
+    svg.find('#btn-home-all').click(function(){
+        do_printer_action('home-all');
+    });
+
+    let moves = {
+      '100':100,
+      '10':10,
+      '1':1,
+      '01':0.1
+    };
+
+    for (var val in moves) {
+      let moveval = moves[val];
+      svg.find('#move-'+val+'-up').click(function() {
+        do_printer_action('move',{y:moveval});
+      });
+      svg.find('#move-'+val+'-down').click(function() {
+        do_printer_action('move',{y:-moveval});
+      });
+      svg.find('#move-'+val+'-left').click(function() {
+        do_printer_action('move',{x:-moveval});
+      });
+      svg.find('#move-'+val+'-right').click(function() {
+        do_printer_action('move',{x:moveval});
+      });
+      svg.find('#move-'+val+'-z-up').click(function() {
+        do_printer_action('move',{z:-moveval});
+      });
+      svg.find('#move-'+val+'-z-down').click(function() {
+        do_printer_action('move',{z:moveval});
+      });
+    }
+
+},true);
+
+page_ctx.on_update_state = function(state) {
+        if (state.coord) {
+            $('#coord').text('X:' + state.coord.x + ' Y:' + state.coord.y + ' Z: ' + state.coord.z);
+        }
+}
+
+</script>
+
+{-sctipts-}

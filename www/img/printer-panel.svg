@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg 
+	xmlns="http://www.w3.org/2000/svg" 
+	xmlns:xlink="http://www.w3.org/1999/xlink" 
+	xmlns:dc="http://purl.org/dc/elements/1.1/" 
+	xmlns:cc="http://web.resource.org/cc/" 
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+	xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" 
+	xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" 
+	version="1.1" 
+	baseProfile="full" 
+	width="600px" height="512px" 
+	viewBox="0 0 600 512" 
+	preserveAspectRatio="xMidYMid meet" 
+	id="svg_document" 
+	style="zoom: 1;">
+	<style>
+
+.icon {
+	pointer-events:none;
+}
+.segment-100 {
+	fill: #aaaaaa;
+}
+.segment-100:hover {
+	fill: #eeeeee;
+}
+.segment-10 {
+	fill: #bbbbbb;
+}
+.segment-10:hover {
+	fill: #eeeeee;
+}
+.segment-1 {
+	fill: #cccccc;
+}
+.segment-1:hover {
+	fill: #eeeeee;
+}
+.segment-01 {
+	fill: #dddddd;
+}
+.segment-01:hover {
+	fill: #eeeeee;
+}
+path#home-btn {
+	fill: inherit;
+}
+path#segment-100 {
+	fill: inherit;
+}
+path#segment-10 {
+	fill: inherit;
+}
+path#segment-1 {
+	fill: inherit;
+}
+path#segment-01 {
+	fill: inherit;
+}
+.btn-home-y {
+	fill: #a0ffa0;
+}
+.btn-home-y:hover {
+	fill: #22ff22;
+}
+.btn-home-x {
+	fill: #ffa0a0;
+}
+.btn-home-x:hover {
+	fill: #ff4444;
+}
+.btn-home-z {
+	fill: #a0a0ff;
+}
+.btn-home-z:hover {
+	fill: #4444ff;
+}
+.btn-home {
+	fill: #f0f0f0;
+}
+.btn-home:hover {
+	fill: #a0a0a0;
+}
+.btn:hover {
+	fill: red;
+	pointer-events:all;
+}
+.icon-text {
+	font: bold 20px sans-serif;
+	pointer-events:none;
+}
+.move-text {
+	font: bold 10px sans-serif;
+	pointer-events:none;
+}
+	</style>
+	<defs id="svg_document_defs">
+		
+		<filter id="f-shadow" x="0" y="0" width="200%" height="200%">
+	      <feGaussianBlur result="blurOut" in="SourceAlpha" stdDeviation="5" />
+	      <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+	    </filter>
+
+		<path 
+				stroke="#000000" 
+				stroke-width="2px"
+				class="btn"
+				fill="#7ca0ff"
+				id="home-btn"  
+				d="M4,4 L4,60 L18,60 A120,120,0,0,1 60,18 L60,4  Z "  transform="" ></path>
+
+		<path 
+			id="segment-100"
+			stroke="#000000"
+			stroke-width="1px"
+			d="M42,38 A128,128,0,0,1 214,38 L194,58 A100,100,0,0,0 62,58 Z" >
+			
+		</path>
+		<path 
+			id="segment-10"
+			stroke="#000000"
+			stroke-width="1px"
+			d="M62,58 A100,100,0,0,1 194,58 L174,78 A72,72,0,0,0 82,78 Z" ></path>
+		<path 
+			id="segment-1"
+			stroke="#000000"
+			stroke-width="1px"
+			d="M82,78 A72,72,0,0,1 174,78 L154,98 A44,44,0,0,0 102,98 Z" ></path>
+		<path 
+			id="segment-01"
+			stroke="#000000"
+			stroke-width="1px"
+			d="M102,98 A44,44,0,0,1 154,98 L134,118 A16,16,0,0,0 122,118 Z" ></path>
+
+		<g id="icon-home" class="icon">
+			<path
+				stroke="none"
+				fill="#000000"
+				d="M10,30 L10,18 L20,10 L30,18 L30,30 L24,30 L24,20 L16,20 L16,30 Z" />
+			<path
+				stroke="#000000"
+				fill="none"
+				stroke-width="2px"
+				d="M6,19 L20,7 L34,19" />
+		</g>
+
+		<path 
+			id="z-segment"
+			stroke="#000000"
+			stroke-width="1px"
+			d="M0,0 L35,0 35,25 0,25 Z" ></path>
+	</defs>
+	<g id="main_group">
+		<!-- <g transform="" id="g1" mask="url(#mask1)">
+			<circle stroke="#000000" transform="" id="circle1" stroke-width="1px" cy="128px" fill="#a3a3a5" r="120px" cx="128px"></circle>
+			<circle stroke="#000000" id="circle2" cy="128px" stroke-width="1px" fill="#bfc1c1" r="95" cx="128px" transform=""></circle>
+			<circle stroke="#000000" id="circle3" cy="128px" stroke-width="1px" fill="#dbdddd" r="70px" cx="128px" transform=""></circle>
+			<circle stroke="#000000" id="circle4" cy="128px" stroke-width="1px" fill="#ffffff" r="45px" cx="128px" transform=""></circle>
+		</g> -->
+
+		<use xlink:href="#segment-100" class="segment-100" id="move-100-up" >
+	    </use>
+		<use xlink:href="#segment-10" class="segment-10" id="move-10-up" />
+		<use xlink:href="#segment-1" class="segment-1" id="move-1-up" />
+		<use xlink:href="#segment-01" class="segment-01" id="move-01-up"/>
+		<g transform="translate(0,256) scale(1,-1)">
+			<use xlink:href="#segment-100" class="segment-100" id="move-100-down"/>
+			<use xlink:href="#segment-10" class="segment-10" id="move-10-down"/>
+			<use xlink:href="#segment-1" class="segment-1" id="move-1-down"/>
+			<use xlink:href="#segment-01" class="segment-01" id="move-01-down"/>
+		</g>
+		<g transform="translate(128,128) rotate(90) translate(-128,-128)">
+			<use xlink:href="#segment-100" class="segment-100" id="move-100-right"/>
+			<use xlink:href="#segment-10" class="segment-10" id="move-10-right"/>
+			<use xlink:href="#segment-1" class="segment-1" id="move-1-right"/>
+			<use xlink:href="#segment-01" class="segment-01" id="move-01-right"/>
+		</g>
+		<g transform="translate(128,128) rotate(-90) translate(-128,-128)">
+			<use xlink:href="#segment-100" class="segment-100" id="move-100-left" />
+			<use xlink:href="#segment-10" class="segment-10" id="move-10-left" />
+			<use xlink:href="#segment-1" class="segment-1" id="move-1-left" />
+			<use xlink:href="#segment-01" class="segment-01" id="move-01-left" />
+		</g>
+
+		<text x="128" y="22" text-anchor="middle" class="move-text">+100</text>
+		<text x="128" y="52" text-anchor="middle" class="move-text">+10</text>
+		<text x="128" y="80" text-anchor="middle" class="move-text">+1</text>
+		<text x="128" y="105" text-anchor="middle" class="move-text">+0.1</text>
+
+		<text x="128" y="155" text-anchor="middle" class="move-text">-0.1</text>
+		<text x="128" y="182" text-anchor="middle" class="move-text">-1</text>
+		<text x="128" y="212" text-anchor="middle" class="move-text">-10</text>
+		<text x="128" y="240" text-anchor="middle" class="move-text">-100</text>
+
+		<text x="19" y="130" text-anchor="middle" class="move-text">-100</text>
+		<text x="48" y="130" text-anchor="middle" class="move-text">-10</text>
+		<text x="76" y="130" text-anchor="middle" class="move-text">-1</text>
+		<text x="102" y="130" text-anchor="middle" class="move-text">-0.1</text>
+
+		<text x="152" y="130" text-anchor="middle" class="move-text">+0.1</text>
+		<text x="179" y="130" text-anchor="middle" class="move-text">+1</text>
+		<text x="208" y="130" text-anchor="middle" class="move-text">+10</text>
+		<text x="238" y="130" text-anchor="middle" class="move-text">+100</text>
+		
+		<!-- <path 
+				stroke="#000000" 
+				stroke-width="2px"
+				class="btn"
+				fill="#7ca0ff"
+				id="home-btn"  
+				d="M4,4 L4,60 L18,60 A120,120,0,0,1 60,18 L60,4  Z "  transform=""></path>
+ -->
+		<use xlink:href="#home-btn" class="btn-home-x" id="btn-home-x" filter="url(#f-shadow)">
+			
+		</use>
+		<use xlink:href="#icon-home" class="icon"  />
+		<text x="40" y="20" class="icon-text">x</text>
+		
+		
+		<g transform="translate(256,256) scale(-1,-1)">
+			<use xlink:href="#home-btn" class="btn-home-z" id="btn-home-z" filter="url(#f-shadow)"/>
+		</g>
+		<use xlink:href="#icon-home" x="216" y="218" />
+		<text x="207" y="245" class="icon-text">z</text>
+		
+		<g transform="translate(0,256) scale(1,-1)">
+			<use xlink:href="#home-btn" class="btn-home-y" id="btn-home-y" filter="url(#f-shadow)"/>
+		</g>
+		<use xlink:href="#icon-home" x="0" y="218" />
+		<text x="40" y="245" class="icon-text">y</text>
+
+		<g transform="translate(256,0) scale(-1,1)" >
+			<use xlink:href="#home-btn" class="btn-home" id="btn-home-all" filter="url(#f-shadow)"/>
+		</g> 
+		<use xlink:href="#icon-home" x="216"  />
+
+		<circle stroke="#000000" id="circle5" stroke-width="3px" cy="128px" fill="#ffffff" r="12px" cx="128px" transform=""></circle>
+
+		<g transform="translate(260,5)">
+			<use xlink:href="#z-segment" class="segment-100" id="move-100-z-up" />
+			<text x="18" y="17" text-anchor="middle" class="move-text">-100</text>
+		</g>
+		<g transform="translate(260,35)">
+			<use xlink:href="#z-segment" class="segment-10" id="move-10-z-up" />
+			<text x="18" y="17" text-anchor="middle" class="move-text">-10</text>
+		</g>
+		<g transform="translate(260,65)">
+			<use xlink:href="#z-segment" class="segment-1" id="move-1-z-up" />
+			<text x="18" y="17" text-anchor="middle" class="move-text">-1</text>
+		</g>
+		<g transform="translate(260,95)">
+			<use xlink:href="#z-segment" class="segment-01" id="move-01-z-up" />
+			<text x="18" y="17" text-anchor="middle" class="move-text">-0.1</text>
+		</g>
+		<g transform="translate(260,136)">
+			<use xlink:href="#z-segment" class="segment-01" id="move-01-z-down" />
+			<text x="18" y="17" text-anchor="middle" class="move-text">+0.1</text>
+		</g>
+		<g transform="translate(260,166)">
+			<use xlink:href="#z-segment" class="segment-1" id="move-1-z-down" />
+			<text x="18" y="17" text-anchor="middle" class="move-text">+1</text>
+		</g>
+		<g transform="translate(260,196)">
+			<use xlink:href="#z-segment" class="segment-10" id="move-10-z-down" />
+			<text x="18" y="17" text-anchor="middle" class="move-text">+10</text>
+		</g>
+		<g transform="translate(260,226)">
+			<use xlink:href="#z-segment" class="segment-100" id="move-100-z-down" />
+			<text x="18" y="17" text-anchor="middle" class="move-text">+100</text>
+		</g>
+	</g>
+</svg>

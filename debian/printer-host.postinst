@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# source debconf library
+. /usr/share/debconf/confmodule
+
+PRINTUSER=print3d
+
+if [ "$1" = configure ]; then
+
+	adduser --system \
+            --quiet \
+            --disabled-password \
+            --group "$PRINTUSER"
+
+	usermod -aG dialout $PRINTUSER
+	usermod -aG video $PRINTUSER
+fi
+
+
+
+#DEBHELPER#
+

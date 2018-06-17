@@ -1,0 +1,21 @@
+
+<ul class="breadcrumb">
+{% for _, item in ipairs(path_list) do %}
+  <li><a href="#open-file" 
+  	data-update="modal"
+  	data-target="#file-open-modal" 
+  	data-path="{*item.path*}">{*item.name*}</a></li>
+{% end %}
+</ul>
+<div class="list-group">
+	{% for _, folder in ipairs(folders) do %}
+	    <a href="#open-file" 
+	    	data-update="modal" 
+	    	data-target="#file-open-modal" 
+	    	data-path="{*path.join(basedir,folder)*}" 
+	    	class="list-group-item list-group-item-info">{*folder*}</a>
+	{% end %}
+	{% for _, file in ipairs(files) do %}
+	    <a href="#" class="list-group-item" data-select="modal" data-file="{*path.join(basedir,file)*}">{*file*}</a>
+	{% end %}
+</div>

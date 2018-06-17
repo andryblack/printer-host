@@ -1,0 +1,185 @@
+{% layout="layout.html" %}
+
+<div id="draw-container">
+  <canvas id="temperature-chart" width="900" height="380"></canvas>
+</div>
+
+{-css-}
+<style>
+#draw-container {
+  height: 300px;
+  width: 100%;
+}
+</style>
+{-css-}
+
+{-sctipts-}
+
+
+
+<script>
+
+      var line_colors = [
+        '#ff0000',
+        '#0000ff',
+        '#00ff00',
+      ];
+
+      var canvas = $("#temperature-chart")[0];
+
+      var elements = {* json.encode(printer:get_temperature_elements()) *};
+      var temperature_history = {* json.encode(printer:get_temperature_history()) *};
+
+      if (!(temperature_history instanceof Array)) {
+        temperature_history = [];
+      }
+
+      var canvas_size = {
+        width: canvas.width,
+        height: canvas.height
+      }
+
+
+
+      function scale_canvas(context) {
+        var width = canvas_size.width;
+        var height = canvas_size.height;
+
+        var devicePixelRatio = window.devicePixelRatio || 1;
+        var backingStoreRatio = (
+          context.webkitBackingStorePixelRatio ||
+          context.mozBackingStorePixelRatio ||
+          context.msBackingStorePixelRatio ||
+          context.oBackingStorePixelRatio ||
+          context.backingStorePixelRatio || 1
+        );
+        var ratio = devicePixelRatio / backingStoreRatio;
+        if (devicePixelRatio !== backingStoreRatio) {
+          // set the 'real' canvas size to the higher width/height
+          canvas.width = width * ratio;
+          canvas.height = height * ratio;
+          // ...then scale it back down with CSS
+          canvas.style.width = width + 'px';
+          canvas.style.height = height + 'px';
+        }
+        else {
+          // this is a normal 1:1 device; just scale it simply
+          canvas.width = width;
+          canvas.height = height;
+          canvas.style.width = '';
+          canvas.style.height = '';
+        }
+        // scale the drawing context so everything will work at the higher ratio
+        context.scale(ratio, ratio);
+      }
+      function draw_graph(ctx) {
+          
+
+          var width = canvas_size.width;
+          var height = canvas_size.height;
+
+         
+
+          ctx.clearRect(0,0,width,height);
+
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(4,height-4);
+          ctx.lineTo(width-4,height-4); 
+          ctx.stroke();
+
+          ctx.save();
+          ctx.strokeStyle = '#aaaacc';
+          ctx.globalAlpha = 0.5;
+          //ctx.setLineDash([5,5]);
+          var step = Math.floor( (width - 8) / {* printer:get_temperature_history_max_length() *} );
+
+          ctx.beginPath();
+          for (var i = 0;i < {* printer:get_temperature_history_max_length() *};i++) {
+            var pos_x = width - 4 - i * step;
+            ctx.moveTo(pos_x,4);
+            ctx.lineTo(pos_x,height);
+          }
+          ctx.stroke();
+          ctx.restore();
+
+          if (temperature_history.length < 2) {
+            return;
+          }
+          var min_t = temperature_history[0][elements[0].var];
+          var max_t = min_t;
+
+          for (var ei = 0;ei<elements.length;ei++) {
+            for (var hi = 0;hi<temperature_history.length;hi++) {
+              var t = temperature_history[hi][elements[ei].var];
+              if (t > max_t) {
+                max_t = t;
+              }
+              if (t < min_t) {
+                min_t = t;
+              }
+            }
+          }
+
+          if (max_t < 50) {
+            max_t = 50;
+          }
+
+          min_t = Math.floor(min_t / 10) * 10;
+          var scale_y = (height - 8) / (max_t-min_t);
+
+
+          for (var ei = 0;ei<elements.length;ei++) {
+            var el = elements[ei];
+            ctx.save();
+            ctx.strokeStyle = line_colors[ei];
+            ctx.beginPath();
+            var pos_x = width - 4;
+            
+            for(var i=temperature_history.length;i>0;i--) {
+              var h = temperature_history[i-1];
+              var v = h[el.var] - min_t;
+
+              var pos_y = height - 4 - scale_y * v;
+
+              if (i == temperature_history.length) {
+                ctx.moveTo(pos_x,pos_y);
+              } else {
+                ctx.lineTo(pos_x,pos_y);
+              }
+              
+              pos_x -= step;
+            }
+            ctx.stroke();
+            ctx.restore();
+          }
+      }
+
+      function on_resize() {
+        var draw_container = $('#draw-container')[0];
+        var width = 8 + Math.floor((draw_container.clientWidth-8) / {* printer:get_temperature_history_max_length() *}) * {* printer:get_temperature_history_max_length() *};
+        var height = draw_container.clientHeight;
+        canvas_size.width = width;
+        canvas_size.height = height;
+        var ctx = canvas.getContext('2d');
+        scale_canvas(ctx);
+        draw_graph(ctx);
+      }
+
+      window.onresize = on_resize;
+
+      on_resize();
+
+      page_ctx.on_update_state = function(state) {
+        if (state.temperature) {
+            temperature_history.push(state.temperature);
+            while (temperature_history.length > {* printer:get_temperature_history_max_length() *}) {
+              temperature_history.shift();
+            }
+            draw_graph(canvas.getContext('2d'));
+        }
+      }
+
+</script>
+
+{-sctipts-}

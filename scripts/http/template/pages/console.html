@@ -1,0 +1,86 @@
+{% layout="layout.html" %}
+
+<div id = "alert_placeholder"></div>
+
+
+<div id="terminal-table" class="terminal-list-group">
+<code class="d-flex p-0">test line 1</code>
+<code class="d-flex p-0">test line 2</code>
+<code class="d-flex p-0 receive">test line 3</code>
+<code class="d-flex p-0">test line 4</code>
+<code class="d-flex p-0">test line 5</code>
+</div>
+
+<div class="input-group">
+  <input id="terminal-cmd" type="text" class="form-control" placeholder="Enter gcode command" aria-label="Enter gcode command" aria-describedby="basic-addon2">
+  <div class="input-group-append">
+    <button id="terminal-send" class="btn btn-outline-primary" type="button">Send</button>
+    <button class="btn btn-outline-secondary" type="button">Button</button>
+  </div>
+</div>
+
+{-sctipts-}
+
+<script type="text/javascript">
+
+var last_line_id = 0;
+
+function update_history(data) {
+	if (data instanceof Array ) {
+		var terminal = $('#terminal-table');
+		var needScroll = (terminal[0].scrollTop > (terminal[0].scrollHeight-terminal.height()-5));
+		//console.log(terminal[0].scrollTop + " / " + terminal[0].scrollHeight + " / " + terminal.height());
+	    $.each(data, function(i, item) {
+	    	console.log('item: ' + item.toString());
+	        $('<code class="d-flex">').appendTo(terminal)
+	        	.addClass("terminal-line-" + item.type)
+	        	.text(item.type + " : " + item.line);
+	        last_line_id = item.id;
+	    });
+
+	    if (needScroll) {
+			terminal.scrollTop(terminal[0].scrollHeight);
+		}
+	}
+}
+
+function load_history() {
+	fetch('/api/terminal?from=' + last_line_id)
+	  .then(checkStatus)
+	  .then(parseJSON)
+	  .then(function(data) {
+	  	update_history(data)
+	  }).catch(function(error) {
+	    console.log('request failed', error)
+	  });	
+}
+
+$('#terminal-table').empty();
+load_history();
+setInterval(load_history,1000);
+
+$('#terminal-send').click(function(event) {
+	event.stopPropagation();
+	fetch('/api/terminal/send',{
+          method:'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body:JSON.stringify({cmd:$('#terminal-cmd').val()})
+        })
+        .then(checkStatus)
+        .then(parseJSON)
+        .then(function(data) {
+           location.reload();
+        }).catch(function(error) {
+            bootstrap_alert.error(
+                '<p>Failed send</p>'+
+                '<hr><p class="mb-0">' + error + '</p>'
+              );
+        })
+});
+
+</script>
+
+{-sctipts-}

@@ -38,11 +38,7 @@ solution 'printer-host'
 			'src',
 			'extlib/llae/src'
 		}
-		llae.link()
-		buildoptions{ 
-			llae.pkgconfig('lua-5.3','cflags'),
-			llae.pkgconfig('libuv','cflags'),
-		}
+		llae.exe()
 		
 		links {
 			'clipperlib',

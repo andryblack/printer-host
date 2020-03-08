@@ -197,7 +197,7 @@ $('#upload-file-submit').click(function(){
 });
 
 function remove_file(file) {
-	fetch('/api/remove?file=/{*(path or '')*}/' + file)
+	fetch('/api/remove?file=/{*(path or '')*}/' + file,{method:'POST'})
 	  .then(checkStatus)
 	  .then(parseJSON)
 	  .then(checkResultStatus)

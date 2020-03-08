@@ -252,7 +252,7 @@ function flasher:writeMemory( data, addr )
 	local len = #data
 	local offset = 1
 	while len > 256 do
-		if not self:cmdWriteMemory(addr,string.sub(data,offset,offset+256)) then
+		if not self:cmdWriteMemory(addr,string.sub(data,offset,offset+256-1)) then
 			return false
 		end
 		offset = offset + 256
@@ -260,7 +260,7 @@ function flasher:writeMemory( data, addr )
 		len = len - 256
 	end
 	if len > 0 then
-		if not self:cmdWriteMemory(addr,string.sub(data,offset,offset+len) .. string.rep(string.pack('>I1',0xff),256-len)) then
+		if not self:cmdWriteMemory(addr,string.sub(data,offset,offset+len-1) .. string.rep(string.pack('>I1',0xff),256-len)) then
 			return false
 		end
 	end

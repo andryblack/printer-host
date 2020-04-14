@@ -24,7 +24,8 @@ end
 
 function Terminal:open(  )
 	self._connection = Connection.create(self._config.path,self)
-	if self._connection:open() then
+	local res,err = self._connection:open()
+	if res then
 		if self._connection:configure_baud(self._config.speed) then
 			self:on_opened()
 			return true
@@ -32,7 +33,7 @@ function Terminal:open(  )
 			print('failed configure serial device speed')
 		end
 	else
-		print('failed opening serial device',self._config.path)
+		print('failed opening serial device',self._config.path,err)
 	end
 end
 

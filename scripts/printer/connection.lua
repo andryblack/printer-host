@@ -62,7 +62,7 @@ end
 function SerialConnection:open(  )
 	local err
 	self._serial,err = app.openSerial(self._path);
-	return self._serial
+	return self._serial,err
 end
 
 function SerialConnection:close( )

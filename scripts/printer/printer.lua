@@ -12,7 +12,7 @@ printer._temperature = {}
 printer._temperature_history = {}
 printer._max_temperature_history = 100
 printer._temperature_elements = {
-	{var='T'},
+	{var='T',alt={'T0'}},
 	{var='B',is_bed=true}
 }
 
@@ -161,7 +161,8 @@ end
 function printer:send_cmd( cmd )
 	local code = GCodeParser.parse(cmd)
 	if not code then
-		return false,'invalid'
+		print('not gcode:',cmd)
+		return self:send_gcode({cmd=cmd})
 	end
 	return self:send_gcode(code)
 end
@@ -200,7 +201,7 @@ end
 function printer:on_rx( data )
 	--print('rx:',data)
 	local tdata = {}
-	for n,v in string.gmatch(data,'(%u):(%-?%d+%.?%d*)') do
+	for n,v in string.gmatch(data,'([%u%d]+):(%-?%d+%.?%d*)') do
 		--print(n,v)
 		tdata[n]=tonumber(v)
 	end
@@ -210,6 +211,13 @@ function printer:on_rx( data )
 			if tdata[v.var] then
 				has_temp = true
 				self._temperature[v.var] = tdata[v.var]
+			elseif v.alt then
+				for _,a in ipairs(v.alt) do
+					if tdata[a] then
+						has_temp = true
+						self._temperature[v.var] = tdata[a]
+					end
+				end
 			end
 		end
 		if has_temp then

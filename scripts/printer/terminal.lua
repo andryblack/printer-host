@@ -84,25 +84,40 @@ function Terminal:on_data( data )
 	local err = string.match(data,'^Error:(.+)$')
 	if err then
 		self:on_error_response(err);
+		return
 	end
 
 	local line = string.match(data,'^Resend:(%d+)$')
 	if line then
 		self._send_line = tonumber(line)
+		return
 	else
 		line = string.match(data,'^ok%s(%d+)$')
 		if line then
 			self:on_ok_response(tonumber(line))
+			return
 		end
 		line = string.match(data,'^skip%s(%d+)$')
 		if line then
 			self:on_skip_response(tonumber(line))
+			return
+		end
+		local respdata = string.match(data,'^ok%s(.+)$')
+		if respdata then
+			if self._delegate then
+				self._delegate:on_rx(respdata)
+			end
+			if self._current then
+				self:on_ok_response(self._current.line)
+			end
+			return
 		end
 		if data == 'ok' and self._current then
 			self:on_ok_response(self._current.line)
+			return
 		end
 	end
-	if self._delegate and not line and not err then
+	if self._delegate then
 		self._delegate:on_rx(data)
 	end
 	
@@ -183,7 +198,7 @@ function Terminal:send_gcode( cmd )
 		return nil,'serial connection closed'
 	end
 	if self._current then
-		print('busy, scheduled',data)
+		print('busy, scheduled',cmd)
 		table.insert(self._scheduled,cmd)
 	else
 		if not self:do_send_cmd(cmd) then
@@ -191,6 +206,14 @@ function Terminal:send_gcode( cmd )
 		end
 	end
 	return true
+end
+
+function Terminal:send_cmd( command , obj)
+	local cmd = {
+		cmd = command,
+		obj = obj
+	}
+	return self:send_gcode(cmd)
 end
 
 function Terminal:process( )

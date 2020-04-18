@@ -215,7 +215,9 @@ function printer:on_rx( data )
 				for _,a in ipairs(v.alt) do
 					if tdata[a] then
 						has_temp = true
-						self._temperature[v.var] = tdata[a]
+						tdata[v.var] = tdata[a]
+						tdata[a] = nil
+						self._temperature[v.var] = tdata[v.var]
 					end
 				end
 			end

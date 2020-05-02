@@ -112,6 +112,9 @@ function Terminal:on_data( data )
 			end
 			return
 		end
+		if self._current and self._current.on_rx then
+			self._current.on_rx( data )
+		end
 		if data == 'ok' and self._current then
 			self:on_ok_response(self._current.line)
 			return

@@ -17,6 +17,14 @@ integer {
 	page = 'connection'
 }
 
+boolean {
+	name = 'printer_sd_emulation',
+	descr = 'Print files via SD emulation',
+	default = false,
+	page = 'printer'
+}
+
+
 integer {
 	name = 'flash_addr',
 	control = 'select',

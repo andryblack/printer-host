@@ -38,6 +38,14 @@ function map_types.select( config , id)
 	return table.concat(r,'\n')
 end
 
+function map_types.boolean( config , id)
+	local r = {'<select class="custom-select" id="'..id..'" name="'..config.name..'">'}
+	table.insert(r,html.option{value='true',selected=(config.value) and true or nil}('YES'))
+	table.insert(r,html.option{value='false',selected=(not config.value) and true or nil}('NO'))
+	table.insert(r,'</select>')
+	return table.concat(r,'\n')
+end
+
 function map_types.list( config, id )
 	local r = {'<div class="form-group list-edit">'}
 	local input_type = map_types[config.element_type] or 'text'

@@ -158,7 +158,7 @@ void Serial::write(lua_State* L) {
 	size_t size = 0;
 	const char* data = lua_tolstring(L,2,&size);
 	if (size) {
-		std::cout << "write " << size << std::endl;
+		//std::cout << "write " << size << std::endl;
 		int r = ::write(m_fd,data,size);
 		if (r < size) {
 			luaL_error(L,"failed write to setial %d",r);

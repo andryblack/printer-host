@@ -34,12 +34,13 @@ function printer:init(  )
 	} then
 		self:on_connected()
 	end
+
 	self.pcb = (require 'printer.pcb').new()
 	self.generator = (require 'printer.generator').new()
-	self:update_tempertatur_elements()
+	self:update_from_settings()
 end
 
-function printer:update_tempertatur_elements(  )
+function printer:update_from_settings(  )
 	for _,v in ipairs(self._temperature_elements) do
 		if v.is_bed then
 			v.values = self.settings.printer_bed_temperatures
@@ -47,6 +48,9 @@ function printer:update_tempertatur_elements(  )
 			v.values = self.settings.printer_temperatures
 		end
 	end
+
+	self._print_sd = self.settings.printer_sd_emulation
+	print('SD emulation:',self._print_sd)
 end
 
 printer._actions = {}
@@ -122,11 +126,17 @@ end
 
 function printer:pause(  )
 	self._resume_state = self:start_state(state_paused)
+	if self._print_sd then
+		self:send_cmd('M25')
+	end
 end
 
 function printer:resume(  )
 	self:end_state(state_paused,self._resume_state)
 	self._resume_state = nil
+	if self._print_sd then
+		self:send_cmd('M24')
+	end
 end
 
 function printer:print_stop(  )
@@ -155,7 +165,7 @@ end
 
 function printer:save_settings(  )
 	self.settings:store(self._settings_file )
-	self:update_tempertatur_elements()
+	self:update_from_settings()
 end
 
 function printer:send_cmd( cmd )
@@ -266,6 +276,9 @@ function printer:on_timer(  )
 	elseif self:is_connected() then
 		self.terminal:process()
 	end
+	if self._print_thread_timer then
+		self._print_thread_timer()
+	end
 end
 
 function printer:get_temperature_history( )
@@ -324,6 +337,58 @@ function printer:_print_thread_func( state, source )
 	self:end_state(state_printing,state)
 end
 
+function printer:_print_sd_thread_func( state, source )
+	
+	while string.sub(source,1,1) == '/' do
+		source = string.sub(source,2,-1)
+	end
+	
+	print('SD file:',source)
+	
+	self._progress = 0
+	
+	local r,e = self:send_cmd( 'M23 ' .. source )
+	if not r then
+		print('send gcode failed:',e)
+		return 
+	end
+
+	r,e = self:send_cmd( 'M24' )
+	if not r then
+		print('send gcode failed:',e)
+		return
+	end
+
+	local printing_complete = false
+	local function on_status_rx(data)
+		print('on_status_rx:',data)
+		local cur,total = string.match(data,'SD printing byte (%d+)/(%d+)')
+		if cur then
+			self._progress = tonumber(cur) / tonumber(total)
+		elseif string.match(data,'Not SD printing.') then
+			printing_complete = true
+		end
+	end
+
+	while not printing_complete do
+
+		local code = GCodeParser.parse('M27')
+		code.on_rx = on_status_rx
+		r,e = self:send_gcode(code)
+
+		if not r then
+			print('send gcode failed:',e)
+		end
+
+		coroutine.yield()
+
+		if self._state == state_idle then
+			printing_complete = true
+		end
+	end
+
+end
+
 function printer:print( source )
 	local state = self:start_state(state_printing)
 	self._print_thread = llae.newThread()
@@ -339,11 +404,44 @@ function printer:print( source )
 		end)
 end
 
+function printer:print_sd( source )
+	local state = self:start_state(state_printing)
+	print('print sd:',source)
+	self._print_thread_timer = coroutine.wrap( function(th) 
+			local res,err = xpcall(function()
+				self:_print_sd_thread_func(state,source)
+			end,debug.traceback)
+
+			self._print_thread_timer = nil
+			self._progress = nil
+			self:end_state(state_printing,state)
+
+			if not res then
+				print('failed print thread',err)
+				error(err)
+			end
+		end) 
+	return true
+		
+end
+
 function printer:print_file( file )
+	if self._print_sd then
+		return self:print_sd( file )
+	end
+	print('print file:',file)
 	local file_path = application.config.files .. '/' .. file
 	local src,err = GCodeFileSource.open(file_path)
 	if src then
 		self:print(src)
+		return true
+	end
+	return false,err
+end
+
+function printer:print_sd_file( file )
+	if file then
+		self:print_sd(file)
 		return true
 	end
 	return false,err

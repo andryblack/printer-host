@@ -65,6 +65,9 @@ function FakePrinter:write( data )
 		self:add_response('ok ' .. n)
 	end
 	local cmd = gcode_parser.parse(c)
+	if not cmd then
+		return false,'failed parse'
+	end
 	if cmd.code == 'M105' then
 		self:add_response('T:' .. tostring(self._temp.T) .. ' B:' .. tostring(self._temp.B))
 	end

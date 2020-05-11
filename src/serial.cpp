@@ -180,8 +180,9 @@ void Serial::close(lua_State* L) {
 int Serial::lopen(lua_State* L) {
 	const char* path = luaL_checkstring(L,1);
 	char linkpath[1024];
-	if (readlink(path,linkpath,sizeof(linkpath)-1)) {
-		linkpath[sizeof(linkpath)-1]=0;
+	ssize_t len = readlink(path,linkpath,sizeof(linkpath)-1);
+	if (len > 0) {
+		linkpath[len]=0;
 		path = linkpath;
 	}
 	int fd = open(path,O_RDWR  | O_NOCTTY | O_NDELAY);

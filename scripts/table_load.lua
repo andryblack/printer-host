@@ -13,4 +13,11 @@ function _M.load( file , env_)
 	return env
 end
 
+function _M.load_string( string , env_)
+	local env = env_ or {}
+	local chunk = assert(load(string, 'load_string','t',env))
+	chunk()
+	return env
+end
+
 return _M

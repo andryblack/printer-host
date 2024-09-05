@@ -1,3 +1,6 @@
+local log = require 'llae.log'
+local async = require 'llae.async'
+
 local printer = {}
 
 printer.terminal = (require 'printer.terminal').new( printer )
@@ -6,7 +9,6 @@ printer.settings = require 'printer.settings_mgmt'
 local GCodeParser = require 'gcode.parser'
 local GCodeFileSource = require 'gcode.file'
 
-local llae = require 'llae'
 
 printer._temperature = {}
 printer._temperature_history = {}
@@ -35,7 +37,6 @@ function printer:init(  )
 		self:on_connected()
 	end
 
-	self.pcb = (require 'printer.pcb').new()
 	self.generator = (require 'printer.generator').new()
 	self:update_from_settings()
 end
@@ -209,7 +210,7 @@ function printer:on_ok_rx(  )
 end
 
 function printer:on_rx( data )
-	--print('rx:',data)
+	--log.info('rx:',data)
 	local tdata = {}
 	for n,v in string.gmatch(data,'([%u%d]+):(%-?%d+%.?%d*)') do
 		--print(n,v)
@@ -262,7 +263,7 @@ function printer:on_timer(  )
 	if self:is_connected() and self.terminal:is_empty() then
 		if self._start_cmd_idx then
 			local cmd = self.settings.printer_start_commands[self._start_cmd_idx]
-			print('start cmd:',self._start_cmd_idx,cmd)
+			log.info('start cmd:',self._start_cmd_idx,cmd)
 			if not cmd then
 				self._start_cmd_idx = nil
 			else 
@@ -300,16 +301,17 @@ function printer:_print_thread_func( state, source )
 		if not line then
 			break
 		end
-		print('line:',line)
+		
 		local code = GCodeParser.parse(line)
 		self._progress = source:progress()
 		if code and code.cmd then
+			log.info('line:',line,'<CMD:'..code.cmd..'>')
 			while not self.terminal:is_empty() do
-				print('terminal busy')
-				coroutine.yield()
+				log.debug('terminal busy')
+				self.terminal:wait_process()
 			end
 			while self._state == state_paused do
-				coroutine.yield()
+				async.pause(1000)
 			end
 			if self._state == state_idle then
 				break
@@ -317,21 +319,20 @@ function printer:_print_thread_func( state, source )
 			
 			local r,e = self:send_gcode( code )
 			if not r then
-				print('send gcode failed:',e)
+				log.error('send gcode failed:',e)
 				break
 			end
 			while not code.ok and not code.error do
-				coroutine.yield()
+				self.terminal:wait_process()
 			end
 			if code.error then
-				print('printing failed: ', code.error)
+				log.error('printing failed: ', code.error)
 				break
 			end
 		else
-			print('skip line:',line)
+			log.debug('skip line:',line)
 		end
 	end
-	self._print_thread = nil
 	source:release()
 	self._progress = nil
 	self:end_state(state_printing,state)
@@ -380,7 +381,7 @@ function printer:_print_sd_thread_func( state, source )
 			print('send gcode failed:',e)
 		end
 
-		coroutine.yield()
+		async.pause(1000)
 
 		if self._state == state_idle then
 			printing_complete = true
@@ -391,22 +392,20 @@ end
 
 function printer:print( source )
 	local state = self:start_state(state_printing)
-	self._print_thread = llae.newThread()
-	self._print_thread:start(
-		function(th) 
-			local res,err = xpcall(function()
-				self:_print_thread_func(state,source)
-			end,debug.traceback)
-			if not res then
-				print('failed print thread',err)
-				error(err)
-			end
-		end)
+	async.run(function()
+		local res,err = xpcall(function()
+			self:_print_thread_func(state,source)
+		end,debug.traceback)
+		if not res then
+			log.error('failed print thread',err)
+			error(err)
+		end
+	end)
 end
 
 function printer:print_sd( source )
 	local state = self:start_state(state_printing)
-	print('print sd:',source)
+	log.info('print sd:',source)
 	self._print_thread_timer = coroutine.wrap( function(th) 
 			local res,err = xpcall(function()
 				self:_print_sd_thread_func(state,source)
@@ -457,17 +456,15 @@ function printer:flash_file( file )
 	f:close()
 
 	local state = self:start_state(state_flashing)
-	self._print_thread = llae.newThread()
-	self._print_thread:start(
-		function(th) 
-			local res,err = xpcall(function()
-				self:_flash_thread_func(state,firmware_data)
-			end,debug.traceback)
-			if not res then
-				print('failed flash thread',err)
-				error(err)
-			end
-		end)
+	async.run(function() 
+		local res,err = xpcall(function()
+			self:_flash_thread_func(state,firmware_data)
+		end,debug.traceback)
+		if not res then
+			print('failed flash thread',err)
+			error(err)
+		end
+	end)
 end
 
 function printer:_flash_thread_func( state, data )
@@ -493,8 +490,6 @@ function printer:_flash_thread_func( state, data )
 	flasher:flash( data , self.settings.flash_addr )
 
 	flasher:close()
-
-	self._print_thread = nil
 
 	self:connect()
 end

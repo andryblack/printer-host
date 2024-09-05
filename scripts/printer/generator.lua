@@ -4,7 +4,7 @@ local Generator = class(nil,'printer.Generator')
 
 local Bounds = require 'geom.bounds'
 local SvgGenerator = require 'svg.generator'
-local Geometry = require 'geom.geometry'
+--local Geometry = require 'geom.geometry'
 local GCodeGenerator = require 'gcode.generator'
 
 Generator.root = application.config.files

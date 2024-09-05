@@ -16,11 +16,6 @@ local sidebar = {
 		icon = 'terminal'
 	},
 	{
-		name = 'pcb',
-		text = 'PCB',
-		icon = 'cpu'
-	},
-	{
 		name = 'generator',
 		text = 'Lua',
 		icon = 'edit-3'

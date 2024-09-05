@@ -2,7 +2,6 @@ local class = require 'llae.class'
 
 local Connection = class(nil,'printer.Connection')
 
-local app = require 'app'
 
 function Connection:_init( path  )
 	self._path = path

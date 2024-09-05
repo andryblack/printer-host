@@ -1,5 +1,7 @@
 local files = {}
-local file_api = (require 'llae').file
+local fs = require 'llae.fs'
+local log = require 'llae.log'
+local lpath = require 'llae.path'
 
 files.root = application.config.files
 
@@ -34,17 +36,17 @@ local actions_map = {
 function files:get_list( path )
 	local dirs = {}
 	local files = {}
-	local folder = self.root .. '/' .. path
-    local files_list,err = file_api.scandir(folder)
-    print('scandir:',files_list,err)
+	local folder = lpath.join(self.root , path )
+    local files_list,err = fs.scandir(folder)
+    log.info('scandir:',files_list,err,folder)
     if not files_list then
         error(err or 'failed scandir')
     end
 	for _,file in ipairs(files_list) do
         local name = file.name
         if name:sub(1,1) ~= "." then
-            local f = folder..'/'..name
-            print ("\t "..f)
+            local f = lpath.join(folder,name)
+            log.info ("\t "..f)
             if file.isdir then
                 table.insert(dirs,name)
             elseif file.isfile then
@@ -74,7 +76,7 @@ function files:get_list( path )
 end
 
 function files:mkdir( path )
-	local res,err = os.mkdir(self.root .. '/' .. path)
+	local res,err = fs.mkdir(lpath.join(self.root, path))
 	if res then
 		return {
 			status = 'ok',
@@ -90,7 +92,7 @@ function files:mkdir( path )
 end
 
 function files:remove( path )
-    local res,err = os.remove(self.root .. '/' .. path)
+    local res,err = fs.unlink(lpath.join(self.root ,path))
     if res then
         return {
             status = 'ok',
@@ -106,113 +108,77 @@ function files:remove( path )
 end
 
 
-local function receive_until( req, str )
-	local data_parts = {}
-	while (true) do
-		local part = req:read()
-		if not part then
-			return nil,str .. ' not found'
-		end
-		
-	end
-end
-
 function files:upload( req )
-	
-    local multipart_handler = (require 'http.multipart')
-    local multipart = multipart_handler.new(req:get_header("Content-Type"),function()
-        return req:read()
-    end)
-    
-    local items = {}
-    local root = self.root
-    function multipart:on_item( item )
-        multipart_handler.on_item(self,item)
-        items[item.name] = item
-        if item.attributes.filename then
-            item.filename = item.attributes.filename
-            item.tmpname = root .. '/.' .. item.filename .. '.tmp'
-            local err = nil
-            print('start write temp file:',item.tmpname)
-            item.file,err = io.open(item.tmpname,'wb')
-            if not item.file then
-                return nil,err
-            end
-            function item:on_data(data,isend)
-                local r,err = self.file:write(data)
-                if not r then
-                    return nil,err
-                end
-                if isend then
-                    self.file:close()
-                    print('end write temp file:',self.tmpname)
-                end
-                return true
-            end
+
+    if not req.multipart then
+        return {
+            status = 'error',
+            error = 'need multipart'
+        }
+    end
+
+    local file_part
+    local path_part
+
+    for _,v in ipairs(req.multipart) do
+        log.info('data:',v.name,v.filename,#v.data)
+        if v.name == 'file' then
+            file_part = v
+            log.info('found file:',v.filename)
+        elseif v.name == 'path' then
+            path_part = v
+            log.info('found path:',v.data)
         end
-        return true
     end
 
-    local res,err = multipart:read()
+    if not file_part then
+        return {
+            status = 'error',
+            error = 'need file'
+        }
+    end
+    if not path_part then
+        return {
+            status = 'error',
+            error = 'need path'
+        }
+    end
+  
+    fs.write_file(lpath.join(self.root , path_part.data , file_part.filename), file_part.data)
 
-    if not res then
-        return {
-            status = 'error',
-            error = err
-        }
-    end
-    if not items.file then
-        return {
-            status = 'error',
-            error = 'file not found'
-        }
-    end
-    
-    local path = self.root .. '/' .. items.path.data
-
-    local newname = items.file.filename
-    print('rename',items.file.tmpname,path .. '/' .. newname)
-    local res,err = os.rename(items.file.tmpname,path .. '/' .. newname)
-    if not res then
-        return {
-            status = 'error',
-            error = err
-        }
-    end
     return {
         status = 'ok',
-        name = newname
+        name = file_part.filename
     }
 end
 
 
 function files.make_routes( server )
-    server:get('/api/files',function( request )
-        request:write_json(files:get_list(request.path))
+    server:get('/api/files',function( request , res )
+        res:json(files:get_list(request.query.path))
     end)
-    server:post('/api/mkdir',function( request )
-        request:write_json(files:mkdir(request.path))
+    server:post('/api/mkdir',function( request, res )
+        res:json(files:mkdir(request.query.path))
     end)
-    server:post('/api/upload',function( request )
-        request:write_json(files:upload(request._req))
+    server:post('/api/upload',function( request, res )
+        res:json(files:upload(request))
     end)
-    server:post('/api/remove',function( request )
-        request:write_json(files:remove(request.file))
+    server:post('/api/remove',function( request , res)
+        res:json(files:remove(request.query.file))
     end)
 
-    server:get('/files/*files_path',function( request )
-        local ctx = { 
-            _req = request._req, 
-            json = require 'llae.json',
-            route = 'files', 
-            sidebar = require 'http.view.sidebar', 
-            sidebar_active = 'files',
-            printer = application.printer,
-            printer_state = server.printer_api:get_state(),
-            path = request.files_path,
-            api = server.printer_api,
-        }
-        request:write_template('pages/files.html', ctx)
+    server:get('/files/:files_path',function( req, res )
+        log.info('req',req.params.files_path)
+        return res:render('layout',{
+                route = 'files',
+                json = require 'llae.json',
+                sidebar = server.sidebar,
+                sidebar_active = 'files',
+                content = 'files',
+                printer = application.printer,
+                path = req.params.files_path,
+                printer_state = server._printer_api:get_state(),
+            })
     end)
 end
 

@@ -1,13 +1,15 @@
 local class = require 'llae.class'
 local llae = require 'llae'
 local gcode_parser = require 'gcode.parser'
+local timer = require 'llae.timer'
+local log = require 'llae.log'
 
 local FakePrinter = class(nil,'printer.FakePrinter')
 
 	
 function FakePrinter:_init( delegate )
 	self._delegate = delegate
-	self._timer = llae.newTimer()
+	self._timer = timer.new()
 	
 	self._scheduled = {}
 	self._temp = {
@@ -20,8 +22,9 @@ end
 
 function FakePrinter:schedule(  )
 	self._timer:start(function()
+		log.debug('FakePrinter resume')
 		self:handle_timer()
-	end,100,0)
+	end,10,0)
 end
 
 function FakePrinter:start(  )
@@ -72,12 +75,12 @@ function FakePrinter:write( data )
 		self:add_response('T:' .. tostring(self._temp.T) .. ' B:' .. tostring(self._temp.B))
 	end
 	if cmd.code == 'M104' then
-		self._temp_t.T = tonumber(cmd.S)
+		self._temp_t.T = tonumber(cmd.S) or 25 
 		if self._temp_t.T < 25 then
 			self._temp_t.T = 25
 		end
 	elseif cmd.code == 'M140' then
-		self._temp_t.B = tonumber(cmd.S)
+		self._temp_t.B = tonumber(cmd.S) or 25
 		if self._temp_t.B < 25 then
 			self._temp_t.B = 25
 		end

@@ -1,21 +1,17 @@
-{% layout="layout.html" %}
 
 <div id="draw-container">
   <canvas id="temperature-chart" width="900" height="380"></canvas>
 </div>
 
-{-css-}
+-{css}-
 <style>
 #draw-container {
   height: 300px;
   width: 100%;
 }
 </style>
-{-css-}
 
-{-sctipts-}
-
-
+-{scripts}-
 
 <script>
 
@@ -27,8 +23,8 @@
 
       var canvas = $("#temperature-chart")[0];
 
-      var elements = {* json.encode(printer:get_temperature_elements()) *};
-      var temperature_history = {* json.encode(printer:get_temperature_history()) *};
+      var elements = <%- json.encode(printer:get_temperature_elements()) %>;
+      var temperature_history = <%- json.encode(printer:get_temperature_history()) %>;
 
       if (!(temperature_history instanceof Array)) {
         temperature_history = [];
@@ -92,10 +88,10 @@
           ctx.strokeStyle = '#aaaacc';
           ctx.globalAlpha = 0.5;
           //ctx.setLineDash([5,5]);
-          var step = Math.floor( (width - 8) / {* printer:get_temperature_history_max_length() *} );
+          var step = Math.floor( (width - 8) / <%= printer:get_temperature_history_max_length() %> );
 
           ctx.beginPath();
-          for (var i = 0;i < {* printer:get_temperature_history_max_length() *};i++) {
+          for (var i = 0;i < <%= printer:get_temperature_history_max_length() %>;i++) {
             var pos_x = width - 4 - i * step;
             ctx.moveTo(pos_x,4);
             ctx.lineTo(pos_x,height);
@@ -157,7 +153,7 @@
 
       function on_resize() {
         var draw_container = $('#draw-container')[0];
-        var width = 8 + Math.floor((draw_container.clientWidth-8) / {* printer:get_temperature_history_max_length() *}) * {* printer:get_temperature_history_max_length() *};
+        var width = 8 + Math.floor((draw_container.clientWidth-8) / <%= printer:get_temperature_history_max_length() %>) * <%= printer:get_temperature_history_max_length() %>;
         var height = draw_container.clientHeight;
         canvas_size.width = width;
         canvas_size.height = height;
@@ -173,7 +169,7 @@
       page_ctx.on_update_state = function(state) {
         if (state.temperature) {
             temperature_history.push(state.temperature);
-            while (temperature_history.length > {* printer:get_temperature_history_max_length() *}) {
+            while (temperature_history.length > <%= printer:get_temperature_history_max_length() %>) {
               temperature_history.shift();
             }
             draw_graph(canvas.getContext('2d'));
@@ -181,5 +177,3 @@
       }
 
 </script>
-
-{-sctipts-}

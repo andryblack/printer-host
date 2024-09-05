@@ -1,8 +1,5 @@
-{% layout="layout.html" %}
-{-jslibs-}
-<script src="js/jquery.panzoom.min.js" type="text/javascript" charset="utf-8"></script>
-<script src="js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
-{-jslibs-}
+
+
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
 
@@ -20,7 +17,7 @@
 	<div class="col-sm-6 mr-0">
  		<div class="generator-view-cont" style="width: 100%; height: 600px; border:1px solid black;">
 			<div class="panzoom" id="svg-panzoom" style="width: 100%; height: 100px" >
-				{* printer.generator:get_svg() *}
+				<%- printer.generator:get_svg() %>
 				<!-- 
 				<svg id="svg-view"  type="image/svg+xml"
 					src="api/pcb.svg">
@@ -30,10 +27,10 @@
 	</div>
 	<div class="form-group col-sm-6 ml-0" >
 		
-		<div id="generator-editor" class="ace-editor" style="height: 450px;" >{* printer.generator:get_script() *}
+		<div id="generator-editor" class="ace-editor" style="height: 450px;" ><%= printer.generator:get_script() %>
 		</div>
 
-		<pre id="generator-output" style="height: 80px;">{* printer.generator:get_output() *}
+		<pre id="generator-output" style="height: 80px;"><%= printer.generator:get_output() %>
 		</pre>
 		
 		<button id="generator-update" class="btn btn-secondary mt-2 enabled-on-printer-state-idle" disabled>Update</button>
@@ -44,8 +41,12 @@
 	
 </div>
 	
+-{jslibs}-
 
-{-sctipts-}
+<script src="js/jquery.panzoom.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+
+-{scripts}-
 
 <script type="text/javascript">
 
@@ -147,4 +148,3 @@ $('#generator-print').click(function(){
 
 </script>
 
-{-sctipts-}

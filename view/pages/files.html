@@ -1,15 +1,14 @@
-{% layout="layout.html" %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3">
 
 	<nav aria-label="breadcrumb">
   		<ol class="breadcrumb" id="bc-nav">
     		<a class="breadcrumb-item" href="/files" >root</a>
-    		{% local _p = '/files' %}
-    		{% for item in (path or ''):gmatch('[^/.]+') do %}
-    			{% _p = _p .. '/' .. item %}
-    			<a class="breadcrumb-item" href="{*_p*}">{*item*}</a>
+    		<% local _xp = '/files' %>
+    		<% for item in (path or ''):gmatch('[^/.]+') do %>
+    			<% _xp = _xp .. '/' .. item %>
+    			<a class="breadcrumb-item" href="<%= _xp %>"><%= item %></a>
     			
-    		{% end %}
+    		<% end %>
   		</ol>
 	</nav>
 
@@ -61,7 +60,7 @@
 <ul id="files-table" class="list-group">
 </ul>
 
-{-sctipts-}
+-{scripts}-
 
 <script type="text/javascript">
 
@@ -78,7 +77,7 @@ function update_content(data) {
 		        if (item.dir) {
 		        	el = $('<a class="pt-1 pb-1">').appendTo('#files-table');
 		        	el.append( feather.icons.folder.toSvg() );
-		        	el.attr('href','/files/{*(path or '')*}/' + item.name );
+		        	el.attr('href','/files/<%= (path or '') %>/' + item.name );
 		        	el.append($("<strong>").text("["+item.name+"]"));
 		        } else {
 		        	el = $('<il class="pt-1 pb-1">').appendTo('#files-table');
@@ -117,7 +116,7 @@ function update_content(data) {
 }
 
 function load_content() {
-	fetch('/api/files?path=/{*(path or '')*}')
+	fetch('/api/files?path=/<%= (path or '') %>')
 	  .then(checkStatus)
 	  .then(parseJSON)
 	  .then(function(data) {
@@ -131,9 +130,9 @@ load_content();
 $('#new-folder-submit').click(function(){
 	var folder = $('#new-folder-name').val();
 	$('#new-folder-name').val('');
-	//console.log('create new folder: ' + folder);
+	console.log('create new folder: ' + folder);
 	if (folder != "") {
-		fetch('/api/mkdir?path=/{*(path or '')*}/'+ folder,{method:'POST'})
+		fetch('/api/mkdir?path=/<%= (path or '') %>/'+ folder,{method:'POST'})
 		  .then(checkStatus)
 		  .then(parseJSON)
 		  .then(checkResultStatus)
@@ -174,7 +173,7 @@ $('#upload-file-submit').click(function(){
 	var file = document.getElementById('upload-file').files[0];
 	var data = new FormData()
 	data.append('file', file);
-	data.append('path', '/{*(path or '')*}');
+	data.append('path', '/<%= (path or '') %>');
 	fetch('/api/upload', {
 	  method: 'POST',
 	  body: data
@@ -197,7 +196,7 @@ $('#upload-file-submit').click(function(){
 });
 
 function remove_file(file) {
-	fetch('/api/remove?file=/{*(path or '')*}/' + file,{method:'POST'})
+	fetch('/api/remove?file=/<%= (path or '') %>/' + file,{method:'POST'})
 	  .then(checkStatus)
 	  .then(parseJSON)
 	  .then(checkResultStatus)
@@ -218,8 +217,8 @@ function remove_file(file) {
 // });
 
 function on_file_action(item) {
-	console.log('click file action /{*(path or '')*}/'+ item.name + ' ' + item.btn.action);
-	fetch('/api/' + item.btn.action + '?file=/{*(path or '')*}/' + item.name, {
+	console.log('click file action /<%= (path or '') %>/'+ item.name + ' ' + item.btn.action);
+	fetch('/api/' + item.btn.action + '?file=/<%= (path or '') %>/' + item.name, {
 		method: 'POST',
 	})
 	  .then(checkStatus)
@@ -244,5 +243,4 @@ function on_file_action(item) {
 
 </script>
 
-{-sctipts-}
 

@@ -9,7 +9,7 @@ function Parser.parse( line )
 	end
 	local comm = string.find(t,';',1,true)
 	if comm then
-		t = string.sub(t,comm-1)
+		t = string.sub(t,1,comm-1)
 	end
 	local r = {
 		cmd = c .. ' ' .. t,

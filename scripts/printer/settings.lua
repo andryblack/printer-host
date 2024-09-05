@@ -1,3 +1,4 @@
+return [[
 string {
 	name = 'device',
 	descr = 'serial connection device',
@@ -73,7 +74,7 @@ string_list {
 	name = 'printer_start_commands',
 	descr = 'Printer start commands',
 	control = 'list',
-	default = {''},
+	default = {'M119'},
 	default_element = 'M119',
 	page = 'printer'
 }
@@ -175,4 +176,4 @@ number {
 	descr = 'Backslash compensation Y axis',
 	default = 0.0,
 	page = 'pcb'
-}
+}]]

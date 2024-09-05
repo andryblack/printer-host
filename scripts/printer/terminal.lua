@@ -1,7 +1,36 @@
 local class = require 'llae.class'
+local async = require 'llae.async'
+local log = require 'llae.log'
 
 local Connection = require 'printer.connection'
 local Terminal = class(nil,'printer.Terminal')
+
+
+local notify_event = class()
+
+function notify_event:_init()
+	self._wait = {}
+end
+
+function notify_event:wait()
+	local c = coroutine.running()
+	--log.debug('<<<','wait',c)
+	table.insert(self._wait,c)
+	coroutine.yield()
+end
+
+function notify_event:notify()
+	local len = #self._wait
+	for _ = 1,len do
+		local u = table.remove(self._wait,1)
+		if u then
+			--log.debug('>>>','notify',u,debug.traceback())
+			coroutine.resume(u)
+		else
+			return
+		end
+	end
+end
 
 function Terminal:_init(  delegate )
 	self._history = {}
@@ -10,11 +39,13 @@ function Terminal:_init(  delegate )
 	self._max_history = 50
 	self._scheduled = {}
 	self._delegate = delegate
+	self._event = notify_event.new()
 end
 
 function Terminal:reset(  )
 	self._current = nil
 	self._scheduled = {}
+	self._event:notify()
 end
 
 function Terminal:init( config )
@@ -73,7 +104,7 @@ function Terminal:on_data( data )
 		print('wait')
 		return
 	end
-	print('rx:',data)
+	--print('rx:',data)
 	self:add_history{
 		type = 'rx',
 		line = data,
@@ -136,7 +167,7 @@ function Terminal:do_send_cmd( cmd )
 	
 	if self._connection:write(data .. '\n') then
 		self._current = cmd
-		print('tx:',data)
+		--print('tx:',data)
 		self:add_history{
 			type = 'tx',
 			line = data,
@@ -184,6 +215,7 @@ function Terminal:on_error_response( err )
 	if self._current then
 		print('rx error: ',err)
 		self._current.error = err
+		self._event:notify()
 	end
 end
 
@@ -194,6 +226,7 @@ function Terminal:do_next_command()
 			table.insert(self._scheduled,1,cmd)
 		end
 	end
+	self._event:notify()
 end
 
 function Terminal:send_gcode( cmd )
@@ -208,6 +241,7 @@ function Terminal:send_gcode( cmd )
 			table.insert(self._scheduled,1,cmd)
 		end
 	end
+	self._event:notify()
 	return true
 end
 
@@ -217,6 +251,10 @@ function Terminal:send_cmd( command , obj)
 		obj = obj
 	}
 	return self:send_gcode(cmd)
+end
+
+function Terminal:wait_process()
+	self._event:wait()
 end
 
 function Terminal:process( )
@@ -236,6 +274,7 @@ function Terminal:process( )
 		}
 		self._last = self._current
 		self._current = nil
+		self._event:notify()
 	end
 end
 

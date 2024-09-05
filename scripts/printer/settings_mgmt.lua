@@ -77,7 +77,7 @@ end
 setmetatable(functions,functions)
 
 function settings:init( )
-	table_load.load( package.root .. '/printer/settings.lua', functions )
+	table_load.load_string( require 'printer.settings', functions )
 	for _,v in ipairs(self._data) do
 		v.value = v.default
 		self._by_name[v.name] = v

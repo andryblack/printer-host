@@ -1,4 +1,5 @@
 <!doctype html>
+<% local content = include_parts('pages/'..content,...) %>
 <html lang="en">
   <head>
     <!-- Required meta tags -->
@@ -9,9 +10,9 @@
     <link rel="stylesheet" href="/css/bootstrap.min.css" >
     <link rel="stylesheet" href="/css/styles.css" >
 
-    {% if blocks.css then %}
-     {*blocks.css*}
-    {% end %}
+    <% if content.css then %>
+      <%- content.css(...) %>
+    <% end %>
 
 
     <title>BlackBox</title>
@@ -21,25 +22,25 @@
 
       <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">BlackBox</a>
       <!-- <span class="navbar-text ml-3 mr-auto">Temperature</span> -->
-      <div id="state-title" class="navbar-text col-sm-2 ml-3">{*printer_state.state*}</div> 
+      <div id="state-title" class="navbar-text col-sm-2 ml-3"><%= printer_state.state %></div> 
       <div id="state-progress" class="progress col-sm mr-3 ml-3 pl-0 pr-0">
-        <div class="progress-bar" style="width:{* (printer_state.progress or 0)*100 *}%"></div>
+        <div class="progress-bar" style="width:<%= (printer_state.progress or 0)*100 %>"></div>
       </div>
-      {% for i,tel in ipairs(printer:get_temperature_elements()) do %}
+      <% for i,tel in ipairs(printer:get_temperature_elements()) do %>
       <div class="dropdown col-sm-1 mr-3">
-        <button class="btn btn-sm dropdown-toggle" id="temperature-{*tel.var*}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          <span data-feather="thermometer"></span><span>{* tel.var *}: {*printer_state.temperature[tel.var]*}</span>
+        <button class="btn btn-sm dropdown-toggle" id="temperature-<%= tel.var %>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span data-feather="thermometer"></span><span><%= tel.var %>: <%=printer_state.temperature[tel.var] %></span>
         </button>
-        <div class="dropdown-menu" aria-labelledby="temperature-{*tel.var*}" id="temperature-{*tel.var*}-dropdown">
-          <a class="dropdown-item" href="#" data-tempertatire="0" data-temp="0" data-var="{*tel.var*}">0</a>
-          {% for j,val in ipairs(tel.values) do %}
-            <a class="dropdown-item" href="#" data-temp="{*val*}" data-var="{*tel.var*}">{*val*}</a>
-          {% end %}
+        <div class="dropdown-menu" aria-labelledby="temperature-<%= tel.var %>" id="temperature-<%= tel.var %>-dropdown">
+          <a class="dropdown-item" href="#" data-tempertatire="0" data-temp="0" data-var="<%= tel.var %>">0</a>
+          <% for j,val in ipairs(tel.values) do %>
+            <a class="dropdown-item" href="#" data-temp="<%= val %>" data-var="<%= tel.var %>"><%= val %></a>
+          <% end %>
           <!-- <a class="dropdown-item" href="#">100</a>
           <a class="dropdown-item" href="#">200</a> -->
         </div>
       </div>
-      {% end %}
+      <% end %>
       <ul class="navbar-nav mr-3">
         <li class="nav-item">
           <a class="nav-link" href="/settings"><span data-feather="settings"></span></a>
@@ -50,10 +51,10 @@
 
     <div class="container-fluid">
       <div class="row">
-        {(fragments/sidebar.html)}
-
-        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4 printer-state-{*printer:get_state().state*}" id="main" >
-          {*view*}
+        <%- include('fragments/sidebar',...) %>
+        
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4 printer-state-<%=printer:get_state().state%>" id="main" >
+          <%- content.base(...) %>
 
           
         </main>
@@ -68,9 +69,9 @@
 
     <script src="/js/feather.min.js"></script>
 
-    {% if blocks.jslibs then %}
-     {*blocks.jslibs*}
-    {% end %}
+    <% if content.jslibs then %>
+      <%- content.jslibs(...) %>
+    <% end %>
 
     <script>
       feather.replace()
@@ -82,10 +83,10 @@
         $('[extra-data-toggle="tooltip"]').tooltip()
       })
 
-      var state = {* json.encode( printer_state ) *};
+      var state = <%- json.encode( printer_state ) %>;
 
-      $('.enabled-on-printer-state-{*printer_state.state*}').prop( "disabled", false );
-      $('.disabled-on-printer-state-{*printer_state.state*}').prop( "disabled", true );
+      $('.enabled-on-printer-state-<%=printer_state.state%>').prop( "disabled", false );
+      $('.disabled-on-printer-state-<%=printer_state.state%>').prop( "disabled", true );
 
       
 
@@ -97,9 +98,9 @@
 
     <script src="/js/application.js"></script>
 
-    {% if blocks.sctipts then %}
-     {*blocks.sctipts*}
-    {% end %}
+    <% if content.scripts then %>
+      <%- content.scripts(...) %>
+    <% end %>
 
     <script type="text/javascript">
         update_state(state);
@@ -111,9 +112,9 @@
           do_printer_action('set-temperature',{t:el.data('temp'),v:el.data('var')});
         }
 
-        {% for i,tel in ipairs(printer:get_temperature_elements()) do %}
-        $('#temperature-{*tel.var*}-dropdown > a').click(set_temperature);
-        {% end %}
+        <% for i,tel in ipairs(printer:get_temperature_elements()) do %>
+        $('#temperature-<%=tel.var%>-dropdown > a').click(set_temperature);
+        <% end %>
     </script>
   </body>
 </html>

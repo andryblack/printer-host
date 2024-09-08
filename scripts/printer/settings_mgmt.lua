@@ -1,5 +1,6 @@
 local table_load = require 'table_load'
 local json = require 'llae.json'
+local log = require 'llae.log'
 
 local settings = {}
 
@@ -36,7 +37,7 @@ function list_mt:get_values(  )
 	return self.value
 end
 function list_mt:set_value( val )
-	assert(type(val)=='table')
+	assert(type(val)=='table','invalid value ' .. tostring(val) .. ':' .. tostring(self.name))
 	self.value = {}
 	for _,v in ipairs(val) do
 		table.insert(self.value,self:convert(v))
@@ -124,6 +125,7 @@ end
 
 function settings:get_settings( page )
 	local r = {}
+	log.info('settings:get_settings',page)
 	for _,v in ipairs(self._data) do
 		if v.page == page then
 			table.insert(r,v)

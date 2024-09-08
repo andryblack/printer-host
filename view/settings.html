@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
   <head>
     <!-- Required meta tags -->
@@ -23,21 +24,21 @@
 
     <div class="container-fluid">
       <div class="row">
-        {(fragments/sidebar.html)}
+        <%- include('fragments/sidebar',...) %>
 
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
           
           <form method="post">
-          <!-- settings page {* context.page *} -->
-          {%
-            for _,v in ipairs(settings:get_page(context.page)) do
-          %}
+          <!-- settings page <%= page %> -->
+          <%
+            for _,v in ipairs(settings:get_page(page)) do
+          %>
               <div class="form-group">
-                {* settings:format_input(v) *}
+                <%- settings:format_input(v) %>
               </div>
-          {%
+          <%
             end
-          %}
+          %>
               <button type="submit" class="btn btn-primary">Save</button>
           </form>
           
@@ -66,9 +67,7 @@
 
     <script src="/js/application.js"></script>
 
-    {% if blocks.sctipts then %}
-     {*blocks.sctipts*}
-    {% end %}
+    
     <script>
     $('.list-edit-append .btn').click(function(el) {
       let list_name = $(this).data('list-name')

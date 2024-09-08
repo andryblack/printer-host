@@ -9,19 +9,35 @@ local sidebar = {
 		name = 'printer',
 		text = 'Printer',
 		icon = 'printer'
-	},
-	{
-		name = 'pcb',
-		text = 'PCB',
-		icon = 'cpu'
-	},
+	}
 }
-
-local html = require "resty.template.html"
 
 local map_types = {
 	string = 'text',
 }
+
+local html = {}
+
+local function element(name,tags)
+	return function(value)
+		local tagsv = {}
+		for k,v in pairs(tags) do
+			table.insert(tagsv,k .. '="' .. tostring(v) .. '"' )
+		end
+		return '<' .. name .. ' ' .. table.concat(tagsv,' ') .. ' >' .. (value or '') .. '</' .. name .. '>'
+	end
+end
+
+function html.label(tags)
+	return element('label',tags)
+end
+function html.input(tags)
+	return element('input',tags)
+end
+function html.option(tags)
+	return element('option',tags)
+end
+
 
 function map_types.select( config , id)
 	local r = {'<select class="custom-select" id="'..id..'" name="'..config.name..'">'}

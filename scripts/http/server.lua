@@ -1,5 +1,6 @@
 local class = require 'llae.class'
 local web = require 'web.application'
+local log = require 'llae.log'
 
 local server = class()
 server.sidebar = require 'http.view.sidebar'
@@ -35,23 +36,7 @@ function server:_init( settings )
 			})
 		end)
 	end
-	-- local sidebar = require 'http.view.sidebar'
--- for _,v in ipairs(sidebar) do
--- 	server:get('/' .. v.name,function( request )
--- 		local ctx = { 
--- 			_req = request._req, 
--- 			json = json,
--- 			route = v.name, 
--- 			sidebar = sidebar, 
--- 			sidebar_active = v.name,
--- 			printer = application.printer,
--- 			printer_state = server.printer_api:get_state(),
--- 			settings = application.printer.settings,
--- 			api = server.printer_api
--- 		}
--- 		request:write_template('pages/' .. v.name .. '.html', ctx)
--- 	end)
--- end
+	
 
 	self.printer_api.make_routes( self )
 
@@ -61,6 +46,46 @@ function server:_init( settings )
 	local generator_api = require 'http.api.generator'
 	generator_api.make_routes( self )
 
+	local settings = require 'http.view.settings'
+	for _,v in ipairs(settings.sidebar) do
+		self._web:get('/settings/' .. v.name,function( request, res )
+			return res:render('settings',{
+				route = v.name,
+				json = require 'llae.json',
+				sidebar = settings.sidebar, 
+				sidebar_active = v.name,
+				page = v.name,
+				settings = settings,
+			})
+		end)
+		self._web:post('/settings/' .. v.name,function( request , res)
+			local data = {}
+			if request.multipart then
+				for _,v in ipairs(request.multipart) do
+					data[v.name] = v.data
+				end
+			elseif request.form then
+				data = request.form
+			else 
+				error('need data')
+			end
+			local json = require 'llae.json'
+			log.info('settings:',v.name,json.encode(data))
+			settings:apply(v.name,data)
+			return res:render('settings',{
+				route = v.name,
+				json = require 'llae.json',
+				sidebar = settings.sidebar, 
+				sidebar_active = v.name,
+				page = v.name,
+				settings = settings,
+			})
+		end)
+	end
+
+	self._web:get('/settings',function( request , response )
+		response:redirect('/settings/' .. settings.sidebar[1].name )
+	end)
 end
 
 function server:get(...)
@@ -264,35 +289,7 @@ return server
 -- 	end)
 -- end
 
--- local settings = require 'http.view.settings'
--- for _,v in ipairs(settings.sidebar) do
--- 	server:get('/settings/' .. v.name,function( request )
--- 		local ctx = { _req = request._req, 
--- 			route = v.name,
--- 			json = json, 
--- 			sidebar = settings.sidebar, 
--- 			sidebar_active = v.name,
--- 			page = v.name,
--- 			settings = settings }
--- 		request:write_template('settings.html', ctx)
--- 	end)
--- 	server:post('/settings/' .. v.name,function( request )
--- 		local data = server:load_form_multipart(request)
--- 		settings:apply(v.name,data)
--- 		local ctx = { _req = request._req, 
--- 			route = v.name,
--- 			json = json, 
--- 			sidebar = settings.sidebar, 
--- 			sidebar_active = v.name,
--- 			page = v.name,
--- 			settings = settings }
--- 		request:write_template('settings.html', ctx)
--- 	end)
--- end
 
--- server:get('/settings',function( request )
--- 	request:write_redirect('/settings/' .. settings.sidebar[1].name )
--- end)
 
 -- server.printer_api.make_routes(server)
 

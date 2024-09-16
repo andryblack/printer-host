@@ -1,4 +1,7 @@
 local class = require 'llae.class'
+local log = require 'llae.log'
+local async = require 'llae.async'
+local serial = require 'posix.serial'
 
 local Connection = class(nil,'printer.Connection')
 
@@ -37,9 +40,12 @@ end
 function SerialConnection:read_function(  )
 	local data = ''
 	while true do
-		local e,ch = self._serial:read()
-		assert(not e,e)
+		local ch, e = self._serial:read()
+		
 		if not ch then
+			if e then
+				log.error('read serial failed',e)
+			end
 			break
 		end
 		--print('>',ch)
@@ -55,13 +61,14 @@ function SerialConnection:read_function(  )
 		end
 		--
 	end
-	print('read complete')
+	log.info('read complete',self._path)
 end
 
 function SerialConnection:open(  )
-	local err
-	self._serial,err = app.openSerial(self._path);
-	return self._serial,err
+	--local err
+	--self._serial,err = app.openSerial(self._path);
+	--return self._serial,err
+	return self:open_serial()
 end
 
 function SerialConnection:close( )
@@ -70,8 +77,26 @@ function SerialConnection:close( )
 	end
 end
 
+function SerialConnection:open_serial()
+	if self._baudrate and self._path then
+		if not self._serial then
+			local s,err = serial.open(self._path,{baudrate=self._baudrate })
+			if not s then
+				return nil,err
+			end
+			async.run(function()
+				self:read_function()
+			end)
+
+		end
+	end
+	return true
+end
+
 function SerialConnection:configure_baud( baudrate )
-	self._serial:configure_baud(baudrate)
+	self._baudrate = baudrate
+	return self:open_serial()
+	
 	if self._serial then
 		self._serial:start_read(self.read_function,self) 
 	end

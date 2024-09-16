@@ -96,12 +96,6 @@ end
 function SerialConnection:configure_baud( baudrate )
 	self._baudrate = baudrate
 	return self:open_serial()
-	
-	if self._serial then
-		self._serial:start_read(self.read_function,self) 
-	end
-	
-	return true
 end
 
 function SerialConnection:is_opened(  )

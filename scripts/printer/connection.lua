@@ -84,6 +84,7 @@ function SerialConnection:open_serial()
 			if not s then
 				return nil,err
 			end
+			self._serial = s
 			async.run(function()
 				self:read_function()
 			end)

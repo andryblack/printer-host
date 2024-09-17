@@ -61,10 +61,10 @@ function Terminal:open(  )
 			self:on_opened()
 			return true
 		else
-			print('failed configure serial device speed')
+			log.error('failed configure serial device speed')
 		end
 	else
-		print('failed opening serial device',self._config.path,err)
+		log.error('failed opening serial device',self._config.path,err)
 	end
 end
 
@@ -101,7 +101,7 @@ function Terminal:on_data( data )
 		return
 	end
 	if (data == 'wait') then
-		print('wait')
+		log.info('wait')
 		return
 	end
 	--print('rx:',data)
@@ -175,7 +175,7 @@ function Terminal:do_send_cmd( cmd )
 		}
 		return true
 	else
-		print('failed wtite cmd',cmd)
+		log.error('failed wtite cmd',cmd)
 	end
 	return false
 end
@@ -190,7 +190,7 @@ function Terminal:on_skip_response( line )
 			self._send_line = self._send_line + 1
 			self:do_next_command()
 		else
-			print('different line ok',self._config.line,line)
+			log.error('different line ok',self._config.line,line)
 		end
 	end
 end
@@ -206,14 +206,14 @@ function Terminal:on_ok_response( line )
 			self._send_line = self._send_line + 1
 			self:do_next_command()
 		else
-			print('different line ok',self._config.line,line)
+			log.error('different line ok',self._config.line,line)
 		end
 	end
 end
 
 function Terminal:on_error_response( err )
 	if self._current then
-		print('rx error: ',err)
+		log.error('rx error: ',err)
 		self._current.error = err
 		self._event:notify()
 	end
@@ -234,7 +234,7 @@ function Terminal:send_gcode( cmd )
 		return nil,'serial connection closed'
 	end
 	if self._current then
-		print('busy, scheduled',cmd)
+		log.info('busy, scheduled',#self._scheduled)
 		table.insert(self._scheduled,cmd)
 	else
 		if not self:do_send_cmd(cmd) then
@@ -261,7 +261,7 @@ function Terminal:process( )
 	if self._current then
 		self._current.timeout = (self._current.timeout or 0) + 1
 		if self._current.timeout > 10 then
-			print('cmd timeout')
+			log.error('cmd timeout')
 			self:on_error_response( 'timeout' )
 		end
 	end

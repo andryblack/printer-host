@@ -51,7 +51,7 @@ function printer:update_from_settings(  )
 	end
 
 	self._print_sd = self.settings.printer_sd_emulation
-	print('SD emulation:',self._print_sd)
+	log.info('SD emulation:',self._print_sd)
 end
 
 printer._actions = {}
@@ -91,7 +91,7 @@ printer._actions['move'] = function( self , data)
 		self._coord.z = (self._coord.z or 0) + data.z
 		cmd = cmd .. ' Z' .. self._coord.z
 	end
-	print('move cmd:',cmd)
+	log.info('move cmd:',cmd)
 	self:send_cmd(cmd)
 	self:send_cmd('M114')
 end
@@ -172,7 +172,7 @@ end
 function printer:send_cmd( cmd )
 	local code = GCodeParser.parse(cmd)
 	if not code then
-		print('not gcode:',cmd)
+		log.info('not gcode:',cmd)
 		return self:send_gcode({cmd=cmd})
 	end
 	return self:send_gcode(code)
@@ -344,13 +344,13 @@ function printer:_print_sd_thread_func( state, source )
 		source = string.sub(source,2,-1)
 	end
 	
-	print('SD file:',source)
+	log.info('SD file:',source)
 	
 	self._progress = 0
 	
 	local r,e = self:send_cmd( 'M23 ' .. source )
 	if not r then
-		print('send gcode failed:',e)
+		log.error('send gcode failed:',e)
 		return 
 	end
 
@@ -362,7 +362,7 @@ function printer:_print_sd_thread_func( state, source )
 
 	local printing_complete = false
 	local function on_status_rx(data)
-		print('on_status_rx:',data)
+		log.info('on_status_rx:',data)
 		local cur,total = string.match(data,'SD printing byte (%d+)/(%d+)')
 		if cur then
 			self._progress = tonumber(cur) / tonumber(total)
@@ -378,10 +378,10 @@ function printer:_print_sd_thread_func( state, source )
 		r,e = self:send_gcode(code)
 
 		if not r then
-			print('send gcode failed:',e)
+			log.error('send gcode failed:',e)
 		end
 
-		async.pause(1000)
+		async.pause(5000)
 
 		if self._state == state_idle then
 			printing_complete = true
@@ -428,7 +428,7 @@ function printer:print_file( file )
 	if self._print_sd then
 		return self:print_sd( file )
 	end
-	print('print file:',file)
+	log.info('print file:',file)
 	local file_path = application.config.files .. '/' .. file
 	local src,err = GCodeFileSource.open(file_path)
 	if src then
@@ -470,23 +470,23 @@ end
 function printer:_flash_thread_func( state, data )
 	local r,e = self:send_cmd( 'M242 S242' )
 	if not r then
-		print('send gcode failed:',e)
+		log.error('send gcode failed:',e)
 		self:end_state(state_printing,state)
 		return
 	end
-	print('firmware update start, close connection')
+	log.info('firmware update start, close connection')
 	self.terminal:close()
 	local flasher = (require 'printer.flasher').new{
 		path = self.settings.device,
 		speed = self.settings.baudrate
 	}
-	print('connect to bootloader')
+	log.info('connect to bootloader')
 	if not flasher:connect() then
-		print('flasher connect failed')
+		log.error('flasher connect failed')
 		self:end_state(state_printing,state)
 		return
 	end
-	print('flsh firmware')
+	log.info('flsh firmware')
 	flasher:flash( data , self.settings.flash_addr )
 
 	flasher:close()

@@ -70,6 +70,7 @@ printer._actions['home-z'] = function( self )
 	self:send_cmd('M114')
 end
 printer._actions['home-all'] = function( self )
+	self:send_cmd('G28 X0')
 	self:send_cmd('G28')
 	self._coord.x = 0
 	self._coord.y = 0

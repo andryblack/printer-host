@@ -353,8 +353,10 @@ end
 
 function printer:wait_state_command(command,params)
 	if self._state_command then
+		log.error('skip wait_state_command',command)
 		return false, 'wait'
 	end
+	log.info('wait_state_command',command)
 	self._state = state_wait
 	self._state_command = {command,params}
 	return true
@@ -409,6 +411,9 @@ function printer:process_loop()
 			else
 				log.info('state change success:',command[1],json.encode(res))
 			end
+		elseif self._state_command then
+			log.error('set wait state again')
+			self._state = state_wait
 		else
 			local res,err = self._klipper_api:request('objects/query',{objects={
 				toolhead = json.array{'position'},

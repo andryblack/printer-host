@@ -16,8 +16,8 @@ printer._temperature = {}
 printer._temperature_history = {}
 printer._max_temperature_history = 100
 printer._temperature_elements = {
-	{var='T',alt={'T0'}},
-	{var='B',is_bed=true}
+	{var='T',alt={'T0'},status='extruder'},
+	{var='B',is_bed=true,status='heater_bed'}
 }
 
 local state_disconnected = 'disconnected'
@@ -25,6 +25,7 @@ local state_idle = 'idle'
 local state_printing = 'printing'
 local state_paused = 'paused'
 local state_flashing = 'flashing'
+local state_wait = 'wait'
 
 function printer:init(  )
 	self._settings_file = application.config.files .. '/.printer/settings.json'
@@ -108,6 +109,7 @@ function printer:stop(  )
 	self:disconnect()
 end
 
+
 function printer:disconnect(  )
 	if self.terminal:close() then
 		
@@ -117,6 +119,8 @@ function printer:disconnect(  )
 end
 
 function printer:connect(  )
+	self._state = state_disconnected
+
 	local res,err = self.terminal:init(application.config.klipper)
 	if not res  then
 		log.error('failed open klipper',err)
@@ -127,36 +131,44 @@ function printer:connect(  )
 		return false
 	end
 	
-	local res,err = self._klipper_api:open(application.config.klipper_api)
-	if not res then
-		log.error('failed open klipper api',err)
-		self.terminal:add_history{
-			type = 'err',
-			line = 'failed open klipper api: ' .. tostring(err),
-		}
+	if not self:open_klipper_api() then
 		return false
 	end
-
-	self._state = state_idle
+	
+	
 	self._delay = 3
 	self._start_cmd_idx = 1
 	self.terminal:reset()
 end
 
 function printer:pause(  )
-	self._resume_state = self:start_state(state_paused)
-	self:send_cmd('M25')
+	return self:wait_state_command('pause_resume/pause',{})
 end
 
 function printer:resume(  )
-	self:end_state(state_paused,self._resume_state)
-	self._resume_state = nil
-	self:send_cmd('M24')
+	return self:wait_state_command('pause_resume/resume',{})
+	-- self:end_state(state_paused,self._resume_state)
+	-- self._resume_state = nil
+	-- self:send_cmd('M24')
+end
+
+
+function printer:cancel(  )
+	if self._state == state_wait then
+		log.info('request cancel printer')
+		local res, err = self._klipper_api:request('pause_resume/cancel',{})
+		if not res then
+			self:on_klipper_api_err(err)
+		else
+			log.info('cancel result:',json.encode(res))
+		end
+	end
 end
 
 function printer:print_stop(  )
-	self:end_state(state_paused,state_idle)
-	self._resume_state = nil
+	if self._state == state_paused then
+		return self:wait_state_command('pause_resume/cancel',{})
+	end
 end
 
 
@@ -261,7 +273,7 @@ end
 
 function printer:on_klipper_api_err(data)
 	local msg = data
-	local s,err = json.decode(data)
+	local s,err = json.decode(data,true)
 	if s then
 		msg = s.message or s.error
 	end
@@ -273,25 +285,100 @@ end
 
 function printer:configure_klipper()
 	if not self._klipper_api:is_connected() then
+		log.error('not connected')
 		return
 	end
 	local res,err = self._klipper_api:request('info',{})
 	if res then
+		log.info('info received:',json.encode(res))
+		self.terminal:add_history{
+			type = 'sys',
+			line = res.state_message
+		}
 	else
 		self:on_klipper_api_err(err)
 	end
 end
 
 function printer:on_timer(  )
-	if self._delay then
-		self._delay = self._delay - 1 
-		if self._delay > 0 then
-			return
-		end
-		self._delay = nil
-	end
 	
-	if self:is_connected() and self.terminal:is_empty() then
+end
+
+function printer:process_klipper_state(obj)
+	log.info('>>>',json.encode(obj))
+	local status = obj.status or {}
+	local webhooks = status.webhooks or {}
+	local state = webhooks.state 
+	local old_state = self._state
+	if state then
+		if state == 'ready' then
+			self._state = state_idle
+			local virtual_sdcard = status.virtual_sdcard or {} 
+			local pause_resume = status.pause_resume or {}
+			if pause_resume.is_paused then
+				self._state = state_paused
+			else
+				if virtual_sdcard.is_active then
+					self._progress = virtual_sdcard.progress
+					self._state = state_printing
+				end
+				self._progress = virtual_sdcard.progress
+			end
+			
+		elseif state == 'error' then
+			self._state = state_disconnected
+		else
+			self._state = state_disconnected
+		end
+	end
+
+	for _,v in ipairs(self._temperature_elements) do
+		if v.status then
+			local hs = status[v.status]
+			if hs and hs.temperature then
+				self._temperature[v.var] = hs.temperature
+			end
+		end
+	end
+			
+
+	if self._state  ~= old_state then
+		self.terminal:add_history{
+			type = 'sys',
+			line = webhooks.state_message or self._state 
+		}
+	end
+end
+
+function printer:wait_state_command(command,params)
+	if self._state_command then
+		return false, 'wait'
+	end
+	self._state = state_wait
+	self._state_command = {command,params}
+	return true
+end
+
+function printer:open_klipper_api()
+	local res,err = self._klipper_api:open(application.config.klipper_api)
+	if not res then
+		log.error('failed open klipper api',err)
+		self.terminal:add_history{
+			type = 'err',
+			line = 'failed open klipper api: ' .. tostring(err),
+		}
+		return false
+	end
+	return true
+end
+
+function printer:process_loop()
+	if not self._klipper_api:is_connected() then
+		async.pause(1000)
+		self:open_klipper_api()
+		return
+	end
+	if self.terminal:is_connected() and self.terminal:is_empty() then
 		if self._start_cmd_idx then
 			local cmd = self.settings.printer_start_commands[self._start_cmd_idx]
 			log.info('start cmd:',self._start_cmd_idx,cmd)
@@ -303,23 +390,50 @@ function printer:on_timer(  )
 				self._start_cmd_idx = self._start_cmd_idx + 1
 			end
 		end
-	elseif self:is_connected() then
+	elseif self.terminal:is_connected() then
 		self.terminal:process()
+	else
+		async.pause(1000)
 	end
-	if self._klipper_api:is_connected() then
-		local res,err = self._klipper_api:request('objects/query',{objects={
-			toolhead = json.array{'position'},
-			virtual_sdcard = json.array{'is_active','progress'},
-			webhooks = json.array{'state'},
-			pause_resume = json.array{'is_paused'},
-			heater = json.null
-		}})
-		if not res then
-			self:on_klipper_api_err(err)
+
+	if not self._start_cmd_idx then
+		if self._state_command and self._state == state_wait then
+			local command = self._state_command
+			self._state_command = nil
+			log.info('request state command',table.unpack(command))
+			local res,err = self._klipper_api:request(table.unpack(command))
+			log.info('response state command',json.encode(res),json.encode(err))
+			if not res then
+				self:on_klipper_api_err(err)
+			else
+				log.info('state change success:',command[1],json.encode(res))
+			end
 		else
-			log.info('>>>',json.encode(res))
+			local res,err = self._klipper_api:request('objects/query',{objects={
+				toolhead = json.array{'position'},
+				virtual_sdcard = json.array{'is_active','progress'},
+				webhooks = json.array{'state','state_message'},
+				pause_resume = json.array{'is_paused'},
+				heater = json.array{'temperature','extruder'},
+				extruder = json.array{'temperature','target'},
+				heater_bed = json.array{'temperature','target'},
+			}})
+			if not res then
+				self:on_klipper_api_err(err)
+			else
+				self:process_klipper_state(res)
+			end
+			async.pause(1000)
 		end
 	end
+end
+
+function printer:start()
+	async.run(function()
+		while true do
+			self:process_loop()
+		end
+	end)
 end
 
 function printer:update_temperatures()

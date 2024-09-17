@@ -10,7 +10,6 @@ local KlipperAPI = class(nil,'printer.KlipperAPI')
 
 function KlipperAPI:_init(   )
 	self._msg_id = 1
-	self._connection = uv.pipe.new()
 	self._data = ''
 	self._scheduled = {}
 end
@@ -38,7 +37,7 @@ function KlipperAPI:_on_read( ch )
 end
 
 function KlipperAPI:_on_msg( msg_data )
-	local msg = json.parse(msg_data)
+	local msg = json.decode(msg_data)
 	if msg.id then
 		for i,v in ipairs(self._scheduled) do
 			if v.id == msg.id then
@@ -67,6 +66,7 @@ function KlipperAPI:_read_thread()
 			if err then
 				log.error('failed read',err)
 			end
+			self._opened = false
 			break
 		end
 		self:_on_read(ch)
@@ -75,7 +75,11 @@ function KlipperAPI:_read_thread()
 end
 
 function KlipperAPI:open( api_path )
+	if self._opened then
+		return true
+	end
 	self:close()
+	self._connection = uv.pipe.new()
 	local res,err = self._connection:connect( api_path )
 	if res then
 		self._opened = true
@@ -89,8 +93,10 @@ function KlipperAPI:open( api_path )
 end
 
 function KlipperAPI:close(  )
-	if self._opened then
+	if self._connection then
 		self._connection:shutdown()
+		self._connection:close()
+		self._connection = nil
 	end
 	self._opened = false
 	self:reset()

@@ -49,6 +49,11 @@ function printer:stop( )
 	return self:get_state()
 end
 
+function printer:cancel( )
+	application.printer:cancel()
+	return self:get_state()
+end
+
 function printer:action( action , data )
 	application.printer:action(action,data)
 	return self:get_state()
@@ -111,6 +116,9 @@ function printer.make_routes( server )
 	end)
 	server:post('/api/stop',function( request, response )
 	    response:json(printer_api:stop())
+	end)
+	server:post('/api/cancel',function( request, response )
+	    response:json(printer_api:cancel())
 	end)
 	server:post('/api/open_gcode',function( request , response)
 	    response:json(printer_api:open_gcode(request.query.file))

@@ -17,6 +17,9 @@
     <button id="printer-resume" class="btn btn-sm btn-outline-secondary mr-2 visible-on-printer-state-paused">
       <span data-feather="pause"></span>
       Resume</button>
+    <button id="printer-cancel" class="btn btn-sm btn-outline-secondary mr-2 visible-on-printer-state-wait">
+      <span data-feather="x-circle"></span>
+      Cancel</button>
   </div>
 
   
@@ -110,6 +113,20 @@ $('#printer-stop').click(function(){
     }).catch(function(error) {
         bootstrap_alert.error(
             '<p>Failed stop</p>'+
+            '<hr><p class="mb-0">' + error + '</p>'
+          );
+    })
+});
+
+$('#printer-cancel').click(function(){
+  fetch('/api/cancel',{method:'POST'})
+    .then(checkStatus)
+    .then(parseJSON)
+    .then(function(data) {
+       update_state(data);
+    }).catch(function(error) {
+        bootstrap_alert.error(
+            '<p>Failed cancel</p>'+
             '<hr><p class="mb-0">' + error + '</p>'
           );
     })

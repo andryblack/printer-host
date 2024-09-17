@@ -45,8 +45,10 @@ async.run(function()
 	application.printer:init()
 
 	application.timer_sec = uv.timer.new()
+
 	application.timer_sec:start(function()
 		application.printer:on_timer(application.timer_sec)
 	end,1000,1000)
 
+	application.printer:start()
 end,true)

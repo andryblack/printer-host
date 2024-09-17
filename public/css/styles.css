@@ -198,7 +198,16 @@ body {
   display: none;
 }
 
+
 .printer-state-paused .visible-on-printer-state-paused {
+  display: inline-block;
+}
+
+.visible-on-printer-state-wait {
+  display: none;
+}
+
+.printer-state-wait .visible-on-printer-state-wait {
   display: inline-block;
 }
 

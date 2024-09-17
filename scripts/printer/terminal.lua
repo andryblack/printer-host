@@ -48,8 +48,11 @@ function Terminal:reset(  )
 	self._event:notify()
 end
 
-function Terminal:init( config )
-	self._config = config
+function Terminal:init( path )
+	self._config = {
+		path = path,
+		speed = 115200
+	}
 	return self:open()
 end
 

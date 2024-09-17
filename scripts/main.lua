@@ -18,7 +18,9 @@ async.run(function()
 	local config = {
 		files = 'bin/files',
 		rootdir = path.join(path.dirname(fs.exepath()),'..'),
-		port = 1339
+		port = 1339,
+		klipper = '/tmp/printer',
+		klipper_api = '/var/run/klipper-api'
 	}
 	if args.config then
 		local exconf = fs.load_file(args.config)

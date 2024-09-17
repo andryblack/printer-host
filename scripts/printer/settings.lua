@@ -1,36 +1,4 @@
 return [[
-string {
-	name = 'device',
-	descr = 'serial connection device',
-	default = 'fake',
-	page = 'connection'
-}
-string {
-	name = 'klipper_api',
-	descr = 'Klipper API socker',
-	default = 'nil',
-	page = 'connection'
-}
-
-integer {
-	name = 'baudrate',
-	control = 'select',
-	descr = 'serial connection baudrate',
-	values = {
-		115200,
-		230400
-	},
-	default = 115200,
-	page = 'connection'
-}
-
-boolean {
-	name = 'printer_sd_emulation',
-	descr = 'Print files via SD emulation',
-	default = false,
-	page = 'printer'
-}
-
 
 integer {
 	name = 'flash_addr',

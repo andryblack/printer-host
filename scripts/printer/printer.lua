@@ -33,15 +33,13 @@ function printer:init(  )
 	self._klipper_api = klipper_api.new()
 	self.settings:init()
 	self.settings:load( self._settings_file )
-	if self.terminal:init{
-		path = self.settings.device,
-		speed = self.settings.baudrate
-	} then
-		self:on_connected()
-	end
+
+
 
 	self.generator = (require 'printer.generator').new()
 	self:update_from_settings()
+
+	self:connect()
 end
 
 function printer:update_from_settings(  )
@@ -52,9 +50,6 @@ function printer:update_from_settings(  )
 			v.values = self.settings.printer_temperatures
 		end
 	end
-
-	self._print_sd = self.settings.printer_sd_emulation
-	log.info('SD emulation:',self._print_sd)
 end
 
 printer._actions = {}
@@ -115,32 +110,48 @@ end
 
 function printer:disconnect(  )
 	if self.terminal:close() then
-		self._state = state_disconnected
+		
 	end
+	self._klipper_api:close()
+	self._state = state_disconnected
 end
 
 function printer:connect(  )
-	if self.terminal:init{
-		path = self.settings.device,
-		speed = self.settings.baudrate
-	} then
-		self:on_connected()
+	local res,err = self.terminal:init(application.config.klipper)
+	if not res  then
+		log.error('failed open klipper',err)
+		self.terminal:add_history{
+			type = 'err',
+			line = 'failed open klipper ' .. tostring(err),
+		}
+		return false
 	end
+	
+	local res,err = self._klipper_api:open(application.config.klipper_api)
+	if not res then
+		log.error('failed open klipper api',err)
+		self.terminal:add_history{
+			type = 'err',
+			line = 'failed open klipper api: ' .. tostring(err),
+		}
+		return false
+	end
+
+	self._state = state_idle
+	self._delay = 3
+	self._start_cmd_idx = 1
+	self.terminal:reset()
 end
 
 function printer:pause(  )
 	self._resume_state = self:start_state(state_paused)
-	if self._print_sd then
-		self:send_cmd('M25')
-	end
+	self:send_cmd('M25')
 end
 
 function printer:resume(  )
 	self:end_state(state_paused,self._resume_state)
 	self._resume_state = nil
-	if self._print_sd then
-		self:send_cmd('M24')
-	end
+	self:send_cmd('M24')
 end
 
 function printer:print_stop(  )
@@ -148,22 +159,6 @@ function printer:print_stop(  )
 	self._resume_state = nil
 end
 
-function printer:on_connected(  )
-	self._state = state_idle
-	self._delay = 3
-	self._start_cmd_idx = 1
-	self.terminal:reset()
-	if self.settings.klipper_api and self.settings.klipper_api~='nil' then
-		local res,err = self._klipper_api:open(self.settings.klipper_api)
-		if not res then
-			log.error('failed open klipper api',err)
-			self.terminal:add_history{
-				type = 'err',
-				line = 'failed open klipper api: ' .. tostring(err),
-			}
-		end
-	end
-end
 
 function printer:start_state( state )
 	local res = self._state
@@ -321,6 +316,8 @@ function printer:on_timer(  )
 		}})
 		if not res then
 			self:on_klipper_api_err(err)
+		else
+			log.info('>>>',json.encode(res))
 		end
 	end
 end
@@ -341,26 +338,6 @@ function printer:get_temperature_elements( )
 	return self._temperature_elements
 end
 
-
-
-function printer:update_sdcard_print_porgress()
-	-- local function on_status_rx(data)
-	-- 	log.info('on_status_rx:',data)
-	-- 	local cur,total = string.match(data,'SD printing byte (%d+)/(%d+)')
-	-- 	if cur then
-	-- 		self._progress = tonumber(cur) / tonumber(total)
-	-- 	elseif string.match(data,'Not SD printing.') then
-	-- 		self._sd_printing_complete = true
-	-- 	end
-	-- end
-	-- local code = GCodeParser.parse('M27')
-	-- code.on_rx = on_status_rx
-	-- r,e = self:send_gcode(code)
-
-	-- if not r then
-	-- 	log.error('send gcode failed:',e)
-	-- end
-end
 
 
 function printer:print_sd( source )

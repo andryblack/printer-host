@@ -270,7 +270,6 @@ function printer:on_timer(  )
 				self:send_cmd(cmd)
 				self._start_cmd_idx = self._start_cmd_idx + 1
 			end
-			
 		else
 			self:send_cmd('M105')
 		end
@@ -356,7 +355,7 @@ function printer:_print_sd_thread_func( state, source )
 
 	r,e = self:send_cmd( 'M24' )
 	if not r then
-		print('send gcode failed:',e)
+		log.error('send gcode failed:',e)
 		return
 	end
 
@@ -371,16 +370,21 @@ function printer:_print_sd_thread_func( state, source )
 		end
 	end
 
+	local temp = false
 	while not printing_complete do
 
-		local code = GCodeParser.parse('M27')
-		code.on_rx = on_status_rx
-		r,e = self:send_gcode(code)
+		if temp then
+			self:send_cmd('M105')
+		else
+			local code = GCodeParser.parse('M27')
+			code.on_rx = on_status_rx
+			r,e = self:send_gcode(code)
 
-		if not r then
-			log.error('send gcode failed:',e)
+			if not r then
+				log.error('send gcode failed:',e)
+			end
 		end
-
+		
 		async.pause(5000)
 
 		if self._state == state_idle then
@@ -406,20 +410,32 @@ end
 function printer:print_sd( source )
 	local state = self:start_state(state_printing)
 	log.info('print sd:',source)
-	self._print_thread_timer = coroutine.wrap( function(th) 
-			local res,err = xpcall(function()
-				self:_print_sd_thread_func(state,source)
-			end,debug.traceback)
+	async.run(function()
+		local res,err = xpcall(function()
+			self:_print_sd_thread_func(state,source)
+		end,debug.traceback)
+		self._progress = nil
+		self:end_state(state_printing,state)
+		if not res then
+			log.error('failed print thread',err)
+			error(err)
+		end
+	end)
+	--self._print_sd = true
+	-- self._print_thread_timer = coroutine.wrap( function(th) 
+	-- 		local res,err = xpcall(function()
+	-- 			self:_print_sd_thread_func(state,source)
+	-- 		end,debug.traceback)
 
-			self._print_thread_timer = nil
-			self._progress = nil
-			self:end_state(state_printing,state)
+	-- 		self._print_thread_timer = nil
+	-- 		self._progress = nil
+	-- 		self:end_state(state_printing,state)
 
-			if not res then
-				print('failed print thread',err)
-				error(err)
-			end
-		end) 
+	-- 		if not res then
+	-- 			log.error('failed print thread',err)
+	-- 			error(err)
+	-- 		end
+	-- 	end) 
 	return true
 		
 end

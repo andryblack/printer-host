@@ -305,7 +305,7 @@ function printer:on_timer(  )
 end
 
 function printer:process_klipper_state(obj)
-	log.info('>>>',json.encode(obj))
+	
 	local status = obj.status or {}
 	local webhooks = status.webhooks or {}
 	local state = webhooks.state 
@@ -343,6 +343,7 @@ function printer:process_klipper_state(obj)
 			
 
 	if self._state  ~= old_state then
+		log.info('>>>',json.encode(obj))
 		self.terminal:add_history{
 			type = 'sys',
 			line = webhooks.state_message or self._state 

@@ -269,7 +269,7 @@ function Terminal:process( )
 	if self._current and self._current.error then
 		self:add_history{
 			type = 'err',
-			line = error,
+			line = self._current.error,
 			cmd = self._current
 		}
 		self._last = self._current

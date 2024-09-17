@@ -84,7 +84,7 @@ function KlipperAPI:open( api_path )
 		end)
 		return true
 	else
-		log.error('failed opening klipper API socket',self._config.klipper_api,err)
+		log.error('failed opening klipper API socket',api_path,err)
 	end
 end
 

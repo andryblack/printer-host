@@ -157,7 +157,7 @@ function printer:on_connected(  )
 		local res,err = self._klipper_api:open(self.settings.klipper_api)
 		if not res then
 			log.error('failed open klipper api',err)
-			self:terminal:add_history{
+			self.terminal:add_history{
 				type = 'err',
 				line = 'failed open klipper api: ' .. tostring(err),
 			}
@@ -270,7 +270,7 @@ function printer:on_klipper_api_err(data)
 	if s then
 		msg = s.message or s.error
 	end
-	self:terminal:add_history{
+	self.terminal:add_history{
 		type = 'err',
 		line = 'klipper api: ' .. tostring(msg),
 	}

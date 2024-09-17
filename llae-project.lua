@@ -4,6 +4,8 @@ module 'llae'
 
 --cmodule 'clipperlib'
 
+config('llae','extern_main',true)
+
 premake{
 	project = [[
 	files{
@@ -12,3 +14,4 @@ premake{
 	}
 	]]
 }
+

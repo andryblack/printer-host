@@ -27,20 +27,11 @@ async.run(function()
 			config[k] = v
 		end
 	end
-	if args.logfile then
-		config.logfile = args.logfile
-	end
 	if not fs.isdir(config.files) then
 		fs.mkdir(config.files)
 	end
 	if not fs.isdir(config.files .. '/.printer') then
 		fs.mkdir(config.files .. '/.printer')
-	end
-	if config.logfile then
-		application.log_fd = assert(posix.open(config.logfile,posix.O_WRONLY|posix.O_CREAT|posix.O_TRUNC,
-				posix.S_IRUSR|posix.S_IWUSR|posix.S_IRGRP|posix.S_IWGRP|posix.S_IROTH))
-		assert(posix.dup2(application.log_fd , posix.STDOUT_FILENO ))
-		assert(posix.dup2(application.log_fd, posix.STDERR_FILENO ))
 	end
 
 	application.config = config

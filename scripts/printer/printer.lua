@@ -1,5 +1,7 @@
 local log = require 'llae.log'
 local async = require 'llae.async'
+local json = require 'llae.json'
+local klipper_api = require 'printer.klipper_api'
 
 local printer = {}
 
@@ -28,6 +30,7 @@ function printer:init(  )
 	self._settings_file = application.config.files .. '/.printer/settings.json'
 	self._state = state_disconnected
 	self._coord = {x=0,y=0,z=0}
+	self._klipper_api = klipper_api.new()
 	self.settings:init()
 	self.settings:load( self._settings_file )
 	if self.terminal:init{
@@ -150,6 +153,16 @@ function printer:on_connected(  )
 	self._delay = 3
 	self._start_cmd_idx = 1
 	self.terminal:reset()
+	if self.settings.klipper_api and self.settings.klipper_api~='nil' then
+		local res,err = self._klipper_api:open(self.settings.klipper_api)
+		if not res then
+			log.error('failed open klipper api',err)
+			self:terminal:add_history{
+				type = 'err',
+				line = 'failed open klipper api: ' .. tostring(err),
+			}
+		end
+	end
 end
 
 function printer:start_state( state )
@@ -251,6 +264,29 @@ function printer:on_rx( data )
 	end
 end
 
+function printer:on_klipper_api_err(data)
+	local msg = data
+	local s,err = json.decode(data)
+	if s then
+		msg = s.message or s.error
+	end
+	self:terminal:add_history{
+		type = 'err',
+		line = 'klipper api: ' .. tostring(msg),
+	}
+end
+
+function printer:configure_klipper()
+	if not self._klipper_api:is_connected() then
+		return
+	end
+	local res,err = self._klipper_api:request('info',{})
+	if res then
+	else
+		self:on_klipper_api_err(err)
+	end
+end
+
 function printer:on_timer(  )
 	if self._delay then
 		self._delay = self._delay - 1 
@@ -266,19 +302,31 @@ function printer:on_timer(  )
 			log.info('start cmd:',self._start_cmd_idx,cmd)
 			if not cmd then
 				self._start_cmd_idx = nil
+				self:configure_klipper()
 			else 
 				self:send_cmd(cmd)
 				self._start_cmd_idx = self._start_cmd_idx + 1
 			end
-		else
-			self:send_cmd('M105')
 		end
 	elseif self:is_connected() then
 		self.terminal:process()
 	end
-	if self._print_thread_timer then
-		self._print_thread_timer()
+	if self._klipper_api:is_connected() then
+		local res,err = self._klipper_api:request('objects/query',{objects={
+			toolhead = json.array{'position'},
+			virtual_sdcard = json.array{'is_active','progress'},
+			webhooks = json.array{'state'},
+			pause_resume = json.array{'is_paused'},
+			heater = json.null
+		}})
+		if not res then
+			self:on_klipper_api_err(err)
+		end
 	end
+end
+
+function printer:update_temperatures()
+
 end
 
 function printer:get_temperature_history( )
@@ -294,51 +342,31 @@ function printer:get_temperature_elements( )
 end
 
 
-function printer:_print_thread_func( state, source )
-	while true do
-		local line = source:get()
-		if not line then
-			break
-		end
-		
-		local code = GCodeParser.parse(line)
-		self._progress = source:progress()
-		if code and code.cmd then
-			log.info('line:',line,'<CMD:'..code.cmd..'>')
-			while not self.terminal:is_empty() do
-				log.debug('terminal busy')
-				self.terminal:wait_process()
-			end
-			while self._state == state_paused do
-				async.pause(1000)
-			end
-			if self._state == state_idle then
-				break
-			end
-			
-			local r,e = self:send_gcode( code )
-			if not r then
-				log.error('send gcode failed:',e)
-				break
-			end
-			while not code.ok and not code.error do
-				self.terminal:wait_process()
-			end
-			if code.error then
-				log.error('printing failed: ', code.error)
-				break
-			end
-		else
-			log.debug('skip line:',line)
-		end
-	end
-	source:release()
-	self._progress = nil
-	self:end_state(state_printing,state)
+
+function printer:update_sdcard_print_porgress()
+	-- local function on_status_rx(data)
+	-- 	log.info('on_status_rx:',data)
+	-- 	local cur,total = string.match(data,'SD printing byte (%d+)/(%d+)')
+	-- 	if cur then
+	-- 		self._progress = tonumber(cur) / tonumber(total)
+	-- 	elseif string.match(data,'Not SD printing.') then
+	-- 		self._sd_printing_complete = true
+	-- 	end
+	-- end
+	-- local code = GCodeParser.parse('M27')
+	-- code.on_rx = on_status_rx
+	-- r,e = self:send_gcode(code)
+
+	-- if not r then
+	-- 	log.error('send gcode failed:',e)
+	-- end
 end
 
-function printer:_print_sd_thread_func( state, source )
-	
+
+function printer:print_sd( source )
+	local state = self:start_state(state_printing)
+	log.info('print sd:',source)
+
 	while string.sub(source,1,1) == '/' do
 		source = string.sub(source,2,-1)
 	end
@@ -350,108 +378,21 @@ function printer:_print_sd_thread_func( state, source )
 	local r,e = self:send_cmd( 'M23 ' .. source )
 	if not r then
 		log.error('send gcode failed:',e)
-		return 
+		return false, e
 	end
 
 	r,e = self:send_cmd( 'M24' )
 	if not r then
 		log.error('send gcode failed:',e)
-		return
+		return false, e
 	end
 
-	local printing_complete = false
-	local function on_status_rx(data)
-		log.info('on_status_rx:',data)
-		local cur,total = string.match(data,'SD printing byte (%d+)/(%d+)')
-		if cur then
-			self._progress = tonumber(cur) / tonumber(total)
-		elseif string.match(data,'Not SD printing.') then
-			printing_complete = true
-		end
-	end
-
-	local temp = false
-	while not printing_complete do
-
-		if temp then
-			self:send_cmd('M105')
-		else
-			local code = GCodeParser.parse('M27')
-			code.on_rx = on_status_rx
-			r,e = self:send_gcode(code)
-
-			if not r then
-				log.error('send gcode failed:',e)
-			end
-		end
-		
-		async.pause(5000)
-
-		if self._state == state_idle then
-			printing_complete = true
-		end
-	end
-
-end
-
-function printer:print( source )
-	local state = self:start_state(state_printing)
-	async.run(function()
-		local res,err = xpcall(function()
-			self:_print_thread_func(state,source)
-		end,debug.traceback)
-		if not res then
-			log.error('failed print thread',err)
-			error(err)
-		end
-	end)
-end
-
-function printer:print_sd( source )
-	local state = self:start_state(state_printing)
-	log.info('print sd:',source)
-	async.run(function()
-		local res,err = xpcall(function()
-			self:_print_sd_thread_func(state,source)
-		end,debug.traceback)
-		self._progress = nil
-		self:end_state(state_printing,state)
-		if not res then
-			log.error('failed print thread',err)
-			error(err)
-		end
-	end)
-	--self._print_sd = true
-	-- self._print_thread_timer = coroutine.wrap( function(th) 
-	-- 		local res,err = xpcall(function()
-	-- 			self:_print_sd_thread_func(state,source)
-	-- 		end,debug.traceback)
-
-	-- 		self._print_thread_timer = nil
-	-- 		self._progress = nil
-	-- 		self:end_state(state_printing,state)
-
-	-- 		if not res then
-	-- 			log.error('failed print thread',err)
-	-- 			error(err)
-	-- 		end
-	-- 	end) 
+	self._sd_printing_complete = false
 	return true
-		
 end
 
 function printer:print_file( file )
-	if self._print_sd then
-		return self:print_sd( file )
-	end
-	log.info('print file:',file)
-	local file_path = application.config.files .. '/' .. file
-	local src,err = GCodeFileSource.open(file_path)
-	if src then
-		self:print(src)
-		return true
-	end
-	return false,err
+	return self:print_sd( file )
 end
 
 function printer:print_sd_file( file )

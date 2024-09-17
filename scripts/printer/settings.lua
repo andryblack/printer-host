@@ -5,6 +5,12 @@ string {
 	default = 'fake',
 	page = 'connection'
 }
+string {
+	name = 'klipper_api',
+	descr = 'Klipper API socker',
+	default = 'nil',
+	page = 'connection'
+}
 
 integer {
 	name = 'baudrate',
